@@ -2,6 +2,8 @@ from typing import  Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from src.core.html_renderer import HtmlRenderer
+from typing import Annotated
+
 
 
 router = APIRouter(prefix="/user")
@@ -15,3 +17,5 @@ async def get_signup_page(request: Request) -> Any:
         request=request,
         template="auth/signup.html",
     )
+
+

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Signup Page</title>
     
-    <!-- Load CSS files from /static/css/ -->
+    
     <link rel="stylesheet" href="{{ url_for('static', path='css/bootstrap.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
 </head>
@@ -18,7 +18,7 @@
                     </div>
                     <div class="card-body">
                         {% if message %}
-                            <div class="alert alert-info">{{ message }}</div>
+                   `         <div class="alert alert-info">{{ message }}</div>
                         {% endif %}
                         <form method="post" action="/signup/">
                             <div class="mb-3">
@@ -45,7 +45,6 @@
         </div>
     </div>
 
-    <!-- Load JS from /static/js/ -->
-    <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
+
 </body>
 </html>
