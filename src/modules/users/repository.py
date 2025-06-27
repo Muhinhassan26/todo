@@ -4,8 +4,8 @@ from fastapi import Depends
 from src.core.db import get_db
 from src.modules.users.models import User
 from sqlalchemy import select
-from schemas import UserCreate
-from auth.services import UserAuthService
+from src.modules.users.schemas import UserCreate
+
 
 class UserRepository:
     def __init__(self, session: Annotated[AsyncSession, Depends(get_db)]):

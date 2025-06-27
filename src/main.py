@@ -4,6 +4,9 @@ from starlette.middleware.cors import CORSMiddleware
 from src.routers import api_router as template_router
 import os
 from fastapi.staticfiles import StaticFiles
+from src.core.middleware import CustomErrorMiddleware, validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+
 class FastApiApp:
     def __init__(self) -> None:
         self.app = FastAPI(
@@ -15,11 +18,13 @@ class FastApiApp:
             docs_url="/api/v1/docs" if settings.DEBUG else None,
             redoc_url="/api/v1/redoc" if settings.DEBUG else None,
         )
-
+        self.register_exception_handlers()
         self.make_middleware()
 
 
-    
+    def register_exception_handlers(self):
+        self.app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
     def make_middleware(self) -> None:
         self.app.add_middleware(
             CORSMiddleware,
@@ -28,6 +33,8 @@ class FastApiApp:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+        self.app.add_middleware(CustomErrorMiddleware)
 
     
     def init_routers(self) -> None:
