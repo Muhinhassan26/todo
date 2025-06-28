@@ -1,50 +1,73 @@
 from typing import Annotated
 from src.modules.users.repository import UserRepository
 from fastapi import Depends
-from src.modules.auth.schemas import LoginData
+from src.modules.auth.schemas import UserRegisterSchema,TokenResponse,AccessTokenPayload,RefreshTokenPayload
 from fastapi import HTTPException,status
 from passlib.context import CryptContext
 from datetime import datetime,timedelta,timezone
 from jose import jwt
 from src.core.config import settings
+from src.core.logger import logger
+from src.core.error.exceptions import ValidationException
+from src.core.security import password_handler,JWTHandler
+
+from src.modules.users.models import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserAuthService:
     def __init__(self, user_repository: Annotated[UserRepository, Depends(UserRepository)]):
         self.user_repository = user_repository
+        self.logger=logger
 
     
+    
+    async def register(self,user_data:UserRegisterSchema) ->TokenResponse:
+        existing_user=self.user_repository.get_by_email(user_data.email)
 
-    async def process_login(self, data: LoginData) -> str:
-           
-        user = await self.user_repository.get_by_email(data.username)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid username or password",
+        if existing_user:
+            self.logger.warning(f"Registration failed: Email already registered - {user_data.email}")
+            raise ValidationException(
+                message="Email already registered",
+                errors={"email": "This email is already in use."}
+            )
+        
+        hashed_password = password_handler.hash(user_data.password)
+        created_user=await self.user_repository.create(
+            User(hashed_password=hashed_password,
+                 **user_data.model_dump(exclude={'hashed_password'}),
+                 )
+        )
+
+        self.logger.info(f"User registered successfully: user_id={User.id}, email={User.email}")
+        tokens=self.generate_token(user_id=created_user.id)
+
+        return tokens
+
+
+    def generate_token(self, user_id: str) -> TokenResponse:
+
+
+        access_payload = AccessTokenPayload(user_id=user_id, sub="access")
+        refresh_payload = RefreshTokenPayload(user_id=user_id, sub="refresh")
+
+        try:
+            access_token, access_expire = JWTHandler.encode("access", access_payload)
+            refresh_token, _ = JWTHandler.encode("refresh", refresh_payload)
+
+            logger.info(f"Generated tokens for user_id={user_id}")
+
+            return TokenResponse(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                user_id=user_id,
+                access_token_expire=access_expire
             )
 
-        if not self.verify_password(data.password, user.hashed_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password",
-            )
-
-       
-        token = self.create_access_token({"sub": str(user.id)})
-        return token
-    
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        return pwd_context.verify(plain_password, hashed_password)
-    
-    def hash_password(self,password:str):
-        return pwd_context.hash(password)
-    
+        except Exception as e:
+            logger.error(f"Failed to generate token for user_id={user_id} — {str(e)}")
+            raise
 
 
-    def create_access_token(data: dict, expires_delta: timedelta | None = 30):
-        payload= data.copy()
-        expire = datetime.utcnow() + timedelta(expires_delta)
-        payload.update({"exp": expire})
-        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+  
