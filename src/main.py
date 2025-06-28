@@ -6,6 +6,7 @@ import os
 from fastapi.staticfiles import StaticFiles
 from src.core.middleware import CustomErrorMiddleware, validation_exception_handler
 from fastapi.exceptions import RequestValidationError
+from starlette.middleware.sessions import SessionMiddleware
 
 class FastApiApp:
     def __init__(self) -> None:
@@ -35,6 +36,7 @@ class FastApiApp:
         )
 
         self.app.add_middleware(CustomErrorMiddleware)
+        self.app.add_middleware(SessionMiddleware, secret_key="some-random-string")
 
     
     def init_routers(self) -> None:

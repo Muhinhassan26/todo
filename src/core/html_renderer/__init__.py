@@ -20,14 +20,14 @@ class HtmlRenderer:
         request: Request,
         template: str,
         data: Any | None = None,
-        errors: dict[str, Any] | None = None,
+        messages: dict[str, Any] | None = None,
         status_code: int = 200,
     ) -> HTMLResponse:
         context: dict[str, Any] = {"request": request}
         if data:
             context["data"] = data.model_dump() if hasattr(data, "model_dump") else data
-        if errors:
-            context["errors"] = errors
+        if messages:
+            context["messages"] = messages
 
         return await self.render_template(
             template,
