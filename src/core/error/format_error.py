@@ -23,7 +23,7 @@ ERROR_MAPPER = {
 }
 
 
-def field_error_format(errors: list[dict[str, str]]) -> dict[str, str]:
+def field_error_format(errors: list[dict[str, str]], is_pydantic_validation_error: bool = False) -> dict[str, str]:
     formatted_errors: dict[str, str] = {}
 
     for error in errors:
@@ -36,10 +36,13 @@ def field_error_format(errors: list[dict[str, str]]) -> dict[str, str]:
         if error_type == "missing":
             formatted_errors[field_name] = f"{field_name} is required"
         elif error_type == "value_error":
-            parts = error.get("msg", "").split(",")
-            code = parts[1].strip() if len(parts) > 1 else "unknown"
-            message = ERROR_MAPPER.get(code, "Unknown error")
-            formatted_errors[field_name] = message
+            if is_pydantic_validation_error:
+                formatted_errors[field_name] = error.get("msg", "")
+            else:
+                parts = error.get("msg", "").split(",")
+                code = parts[1].strip() if len(parts) > 1 else "unknown"
+                message = ERROR_MAPPER.get(code, "Unknown error")
+                formatted_errors[field_name] = message
         else:
             formatted_errors[field_name] = error.get("msg", "Unknown error")
 
