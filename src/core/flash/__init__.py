@@ -18,5 +18,6 @@ def flash_message(request: Request, msg: str, errors: dict[str, str] | None = No
             request.session["_messages"].append({"message": full_msg, "category": category})
 
 
+
 def get_flash_messages(request: Request) -> list:
     return request.session.pop("_messages") if "_messages" in request.session else []

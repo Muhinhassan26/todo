@@ -12,7 +12,7 @@ ERROR_MAPPER = {
 }
 
 
-def field_error_format(errors: list[dict[str, str]]) -> dict[str, str]:
+def field_error_format(errors: list[dict[str, str]], is_pydantic_validation_error: bool = False) -> dict[str, str]:
     formatted_errors: dict[str, str] = {}
 
     for error in errors:

@@ -11,7 +11,7 @@ from src.modules.auth.schemas import AccessTokenPayload, RefreshTokenPayload
 
 
 class JWTHandler:
-    secret_key = settings.JWT_SECRET
+    secret_key = settings.SECRET_KEY
     algorithm = settings.JWT_ALGORITHM
     access_expire_minutes = settings.ACCESS_TOKEN_EXPIRY_MINUTES
     refresh_expire_minutes = settings.REFRESH_TOKEN_EXPIRY_MINUTES
@@ -42,7 +42,7 @@ class JWTHandler:
         try:
             return jwt.decode(token, JWTHandler.secret_key, algorithms=[JWTHandler.algorithm])
         except jwt.PyJWTError as exception:
-            logger.error("JWK invalid %s", exception)
+            logger.error("JWT invalid %s", exception)
             raise JWTError(errors=ERROR_MAPPER[UNAUTHORIZED_ERROR]) from exception
 
     @staticmethod

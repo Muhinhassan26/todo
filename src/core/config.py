@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     DEBUG: bool
     DATABASE_URL: str
     SECRET_KEY:str
-    ALGORITHM:str
+    JWT_ALGORITHM:str
     ACCESS_TOKEN_EXPIRY_MINUTES: int
     REFRESH_TOKEN_EXPIRY_MINUTES: int
 
