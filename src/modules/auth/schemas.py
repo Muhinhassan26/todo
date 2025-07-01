@@ -10,7 +10,7 @@ class UserRegisterSchema(BaseModel):
     password: str = Field(..., min_length=6, max_length=128)
     confirm_password:str=Field(..., min_length=6, max_length=128)
 
-    @model_validator(mode="after")
+    @model_validator(mode="before")
     def passwords_match(cls, values):
         pw = values.get("password")
         confirm_pw = values.get("confirm_password")

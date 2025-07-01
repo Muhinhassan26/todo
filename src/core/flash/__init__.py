@@ -13,9 +13,12 @@ def flash_message(request: Request, msg: str, errors: dict[str, str] | None = No
 
     # Add field-specific errors
     if errors:
-        for field, err_msg in errors.items():
-            full_msg = f"{field.capitalize()}: {err_msg}"
-            request.session["_messages"].append({"message": full_msg, "category": category})
+        if isinstance(errors, dict):
+            for field, err_msg in errors.items():
+                full_msg = f"{field.capitalize()}: {err_msg}"
+                request.session["_messages"].append({"message": full_msg, "category": category})
+        else:
+            request.session["_messages"].append({"message": errors, "category": category})
 
 
 

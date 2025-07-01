@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to ToDo Manager{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="mb-4">Welcome to ToDo Manager</h1>
+            <p class="lead">
+                ToDo Manager is a lightweight, secure, and elegant task tracking app where you can:
+            </p>
+            <ul class="list-group list-group-flush text-start my-4">
+                <li class="list-group-item">✅ Organize your tasks by priority</li>
+                <li class="list-group-item">📅 Track your task progress and completion</li>
+                <li class="list-group-item">🔐 Log in securely using session cookies</li>
+                <li class="list-group-item">📝 Update and delete your todos easily</li>
+            </ul>
+            <div class="d-flex justify-content-center mt-4">
+                <a href="/auth/user/login/" class="btn btn-primary me-3">Login</a>
+                <a href="/auth/user/signup/" class="btn btn-outline-secondary">Sign Up</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

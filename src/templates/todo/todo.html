@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}My ToDo List{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-center">Welcome to Your ToDo List</h2>
+
+  {% include "partials/messages.html" %}
+
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header">Add New Task</div>
+    <div class="card-body">
+      <form method="post" action="/todos/create">
+        <div class="mb-3">
+          <label for="title" class="form-label">Title</label>
+          <input type="text" name="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="2" required></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="priority" class="form-label">Priority (1-5)</label>
+          <input type="number" name="priority" min="1" max="5" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Create</button>
+      </form>
+    </div>
+  </div>
+
+  {% if data.todos %}
+    <div class="card shadow-sm">
+      <div class="card-header">Your Todos</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Priority</th>
+              <th>Completed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for todo in data.todos %}
+              <tr>
+                <form method="post" action="/todos/update/{{ todo.id }}">
+                  <td>
+                    <input type="text" name="title" value="{{ todo.title }}" class="form-control" required>
+                  </td>
+                  <td>
+                    <textarea name="description" class="form-control" rows="1" required>{{ todo.description }}</textarea>
+                  </td>
+                  <td>
+                    <input type="number" name="priority" min="1" max="5" value="{{ todo.priority }}" class="form-control" required>
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" name="completed" value="true" {% if todo.completed %}checked{% endif %}>
+                  </td>
+                  <td class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success btn-sm">Update</button>
+                </form>
+                    <form method="post" action="/todos/delete/{{ todo.id }}">
+                      <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                  </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted mt-3 text-center">You have no todos yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

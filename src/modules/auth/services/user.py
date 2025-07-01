@@ -5,6 +5,8 @@ from src.modules.auth.schemas import UserLoginSchema,UserRegisterSchema,TokenRes
 from src.core.logger import logger
 from src.core.error.exceptions import ValidationException
 from src.core.security import password_handler,JWTHandler
+from src.core.error.format_error import ERROR_MAPPER
+from src.core.error.codes import EMAIL_ALREADY_EXISTS
 
 from src.modules.users.models import User
 
@@ -18,13 +20,12 @@ class UserAuthService:
     
     
     async def register(self,user_data:UserRegisterSchema) ->TokenResponse:
-        existing_user=self.user_repository.get_by_email(user_data.email)
+        existing_user=await self.user_repository.get_by_email(user_data.email)
 
         if existing_user:
             self.logger.warning(f"Registration failed: Email already registered - {user_data.email}")
             raise ValidationException(
-                message="Email already registered",
-                errors={"email": "This email is already in use."}
+                errors=ERROR_MAPPER[EMAIL_ALREADY_EXISTS]
             )
         
         hashed_password = password_handler.hash(user_data.password)

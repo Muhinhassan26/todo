@@ -36,3 +36,7 @@ class NotFoundException(CustomException):
 class JWTError(CustomException):
     code = status.HTTP_403_FORBIDDEN
     message = "Not authenticated"
+
+class UnauthorizedException(Exception):
+    code = status.HTTP_401_UNAUTHORIZED
+    message = "Not authenticated"

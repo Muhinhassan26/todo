@@ -34,31 +34,14 @@ async def process_signup(
     user_auth_service: Annotated[UserAuthService, Depends(UserAuthService)],
 ) -> Any:
     renderer = HtmlRenderer()
-    try:
-        await user_auth_service.register(user_data=data)
-        return await renderer.render(
-            request=request,
-            template="todo/todo.html",
-            messages=[{"category": "success", "message": "Signup successful!"}],
-            data=data,
-        )
-    except ValidationError as e:
-        error_messages = [
-            {"category": "danger", "message": err["msg"]} for err in e.errors()
-        ]
-        return await renderer.render(
-            request=request,
-            template="auth/signup.html",
-            messages=error_messages,
-            data=data,
-        )
-    except Exception as e:
-        return await renderer.render(
-            request=request,
-            template="auth/signup.html",
-            messages=[{"category": "danger", "message": str(e)}],
-            data=data,
-        )
+    await user_auth_service.register(user_data=data)
+    return await renderer.render(
+        request=request,
+        template="auth/login.html",
+        messages=[{"category": "success", "message": "Signup successful!"}],
+        data=data,
+    )
+
     
 
 @router.get("/login/", response_class=HTMLResponse)
