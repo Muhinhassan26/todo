@@ -26,6 +26,8 @@ class HtmlRenderer:
         context: dict[str, Any] = {"request": request}
         if data:
             context["data"] = data.model_dump() if hasattr(data, "model_dump") else data
+        else:
+            context["data"] = {}
         if messages:
             context["messages"] = messages
 

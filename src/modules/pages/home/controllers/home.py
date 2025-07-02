@@ -10,5 +10,5 @@ renderer = HtmlRenderer()
 async def homepage(request: Request):
     return await renderer.render(
         request=request,
-        template="home/index.html"
+        template="pages/index.html"
     )

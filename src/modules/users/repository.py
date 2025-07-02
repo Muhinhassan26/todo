@@ -27,12 +27,12 @@ class UserRepository:
         return result.scalar_one_or_none()   
     
     
-    async def create(self, user_data: UserCreate) -> User:
-        user = User(**user_data.model_dump())
-        self.session.add(user)
+    async def create(self, user_data: User) -> User:
+        
+        self.session.add(user_data)
         await self.session.commit()
-        await self.session.refresh(user)
-        return user
+        await self.session.refresh(user_data)
+        return user_data
     
     async def list_all(self) -> list[User]:
         result = await self.session.execute(select(User))

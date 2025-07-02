@@ -14,4 +14,4 @@ class Todo(BaseModel):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
   
-    # user: Mapped["User"] = relationship(back_populates="todos")
+    user: Mapped["User"] = relationship(back_populates="todos")

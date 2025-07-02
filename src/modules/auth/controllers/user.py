@@ -63,7 +63,7 @@ async def process_login(
 ) -> Any:
     renderer = HtmlRenderer()
     try:
-        tokens = await user_auth_service.login_user(data=data)
+        tokens = await user_auth_service.login_user(login_data=data)
 
         response = await renderer.render(
             request=request,
@@ -74,14 +74,14 @@ async def process_login(
        
         response.set_cookie(
             key="access_token",
-            value=tokens["access_token"],
+            value=tokens.access_token,
             httponly=True,
         )
 
         
         response.set_cookie(
             key="refresh_token",
-            value=tokens["refresh_token"],
+            value=tokens.refresh_token,
             httponly=True,
         )
         logger.info(f"Login successful for user_id={tokens.user_id}")

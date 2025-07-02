@@ -8,7 +8,9 @@ class User(BaseModel):
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    username:Mapped[str]=mapped_column(String(50), nullable=False)
     hashed_password: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    
 
-    # todos: Mapped[List["Todo"]] = relationship(back_populates="user")
+    todos: Mapped[List["Todo"]] = relationship(back_populates="user")
 

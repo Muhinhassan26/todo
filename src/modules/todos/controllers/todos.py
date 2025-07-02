@@ -41,7 +41,7 @@ async def create_todo(
 ) -> Any:
      
     todo_data = TodoCreate(
-            data.model_dump()
+            **data.model_dump()
         )
     await todo_service.create_todo(user_id, todo_data)
     return RedirectResponse(url="/todos", status_code=303) 
@@ -56,7 +56,7 @@ async def update_todo(
     user_id: Annotated[int, Depends(require_login)],
 ) -> Any:
     update_data = TodoUpdate(
-        data.model_dump()
+        **data.model_dump()
     )
     await todo_service.update_todo(todo_id, user_id, update_data)
     return RedirectResponse(url="/todos", status_code=303)

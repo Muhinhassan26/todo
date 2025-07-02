@@ -19,25 +19,49 @@ class UserAuthService:
 
     
     
-    async def register(self,user_data:UserRegisterSchema) ->TokenResponse:
-        existing_user=await self.user_repository.get_by_email(user_data.email)
+    # async def register(self,user_data:UserRegisterSchema) ->TokenResponse:
+    #     existing_user=await self.user_repository.get_by_email(user_data.email)
 
+    #     if existing_user:
+    #         self.logger.warning(f"Registration failed: Email already registered - {user_data.email}")
+    #         raise ValidationException(
+    #             errors=ERROR_MAPPER[EMAIL_ALREADY_EXISTS]
+    #         )
+        
+    #     hashed_password = password_handler.hash(user_data.password)
+    #     confirm_password=password_handler.hash(user_data.confirm_password)
+    #     created_user=await self.user_repository.create(
+    #         User(hashed_password=hashed_password,
+    #              confirm_password=confirm_password,
+    #              **user_data.model_dump(exclude={'password','confirm_password'}),
+    #              )
+    #     )
+
+    #     self.logger.info(f"User registered successfully: user_id={User.id}, email={User.email}")
+    #     tokens=self.generate_token(user_id=created_user.id)
+
+    #     return tokens
+
+    async def register(self, user_data: UserRegisterSchema) -> TokenResponse:
+        existing_user = await self.user_repository.get_by_email(user_data.email)
         if existing_user:
             self.logger.warning(f"Registration failed: Email already registered - {user_data.email}")
-            raise ValidationException(
-                errors=ERROR_MAPPER[EMAIL_ALREADY_EXISTS]
-            )
-        
+            raise ValidationException(errors=ERROR_MAPPER[EMAIL_ALREADY_EXISTS])
+
         hashed_password = password_handler.hash(user_data.password)
-        created_user=await self.user_repository.create(
-            User(hashed_password=hashed_password,
-                 **user_data.model_dump(exclude={'hashed_password'}),
-                 )
+
+        # Create a User SQLAlchemy instance
+        user = User(
+            name=user_data.name,
+            email=user_data.email,
+            username=user_data.username,
+            hashed_password=hashed_password
         )
 
-        self.logger.info(f"User registered successfully: user_id={User.id}, email={User.email}")
-        tokens=self.generate_token(user_id=created_user.id)
+        created_user = await self.user_repository.create(user)
+        self.logger.info(f"User registered successfully: user_id={created_user.id}, email={created_user.email}")
 
+        tokens = self.generate_token(user_id=str(created_user.id))
         return tokens
 
 
@@ -66,7 +90,7 @@ class UserAuthService:
 
 
     async def login_user(self,login_data:UserLoginSchema) -> TokenResponse:
-        user=self.user_repository.get_by_email(login_data.email)
+        user=await self.user_repository.get_by_email(login_data.email)
 
         if not user:
             self.logger.warning(f"Login failed: Email not found - {login_data.email}")
