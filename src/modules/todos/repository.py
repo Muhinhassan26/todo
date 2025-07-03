@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.db import get_db
 from fastapi import Depends
 from src.modules.todos.models import Todo
-from sqlalchemy import select,delete
+from sqlalchemy import select,delete,func
 from src.modules.todos.schemas import TodoCreate,TodoUpdate
 
 class TodoRepository:
@@ -14,7 +14,22 @@ class TodoRepository:
     async def get_all_by_user(self, user_id: int) -> List[Todo]:
         query = select(Todo).where(Todo.user_id == user_id).order_by(Todo.created_at.desc())
         result = await self.session.execute(query)
-        return result.scalars().all()  
+        return result.scalars().all() 
+
+    async def get_all_by_user_paginated(self,
+                                        user_id:int,
+                                        skip:int,
+                                        limit:int=10) -> List[Todo]:
+        query=select(Todo).where(Todo.user_id ==
+                                user_id).order_by(Todo.created_at.desc()).offset(skip).limit(limit=limit)
+        result=await self.session.execute(query)
+        return result.scalars().all()
+
+    async def count_by_user(self, user_id: int) -> int:
+        query = select(func.count()).select_from(Todo).where(Todo.user_id == user_id)
+        result = await self.session.execute(query)
+        return result.scalar_one()
+                                        
     
     async def get_by_id(self, todo_id: int, user_id: int) -> Optional[Todo]:
         query= select(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)

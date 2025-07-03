@@ -40,3 +40,6 @@ class JWTError(CustomException):
 class UnauthorizedException(Exception):
     code = status.HTTP_401_UNAUTHORIZED
     message = "Login Required"
+
+
+# class AlreadyLoggedIn(Exception):

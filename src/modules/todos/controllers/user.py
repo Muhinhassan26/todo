@@ -16,18 +16,50 @@ renderer = HtmlRenderer()
 
 @router.get("/todos/", response_class=HTMLResponse)
 async def get_todo_list(
+    todo_service:Annotated[TodoService,Depends()],
+    user_id:Annotated[int,Depends(require_login)],
     request: Request,
-    todo_service: Annotated[TodoService, Depends()],
-    user_id: Annotated[int, Depends(require_login)],
+    page: int = 1,  
+    limit: int = 10, 
+
 ) -> Any:
     
-    todos = await todo_service.get_user_todos(user_id)
+    skip = (page - 1) * limit
 
+    todos ,has_next= await todo_service.get_user_todos_paginated(user_id=user_id, skip=skip, limit=limit)
+    total = await todo_service.count_user_todos(user_id)
+    total_pages = (total + limit - 1) // limit
+
+    
     return await renderer.render(
         request=request,
         template="todo/list.html",
-        data={"todos": todos}
+        data={
+            "todos": todos,
+            "page": page,
+            "limit": limit,
+            "has_next":has_next,
+            "total_pages": total_pages,
+        },
     )
+
+
+# @router.get("/todos/", response_class=HTMLResponse)
+# async def get_todo_list(
+#     request: Request,
+#     todo_service: Annotated[TodoService, Depends()],
+#     user_id: Annotated[int, Depends(require_login)],
+# ) -> Any:
+    
+#     todos = await todo_service.get_user_todos(user_id)
+
+#     return await renderer.render(
+#         request=request,
+#         template="todo/list.html",
+#         data={"todos": todos}
+#     )
+
+
     
 @router.get("/create/", response_class=HTMLResponse)
 async def add_todo_form(
