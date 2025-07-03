@@ -10,11 +10,11 @@ from src.core.flash import flash_message
 
 
 
-router = APIRouter(prefix="/todos", tags=["Todos"])
+router = APIRouter(prefix="/user", tags=["Todos"])
 renderer = HtmlRenderer()
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/todos/", response_class=HTMLResponse)
 async def get_todo_list(
     request: Request,
     todo_service: Annotated[TodoService, Depends()],
@@ -24,15 +24,24 @@ async def get_todo_list(
     todos = await todo_service.get_user_todos(user_id)
 
     return await renderer.render(
-            request=request,
-            template="todo/todo.html",
-            data={"todos": todos}
-        )
+        request=request,
+        template="todo/list.html",
+        data={"todos": todos}
+    )
     
+@router.get("/create/", response_class=HTMLResponse)
+async def add_todo_form(
+    request: Request,
+    user_id: Annotated[int, Depends(require_login)]
+):
+    return await renderer.render(
+        request=request,
+        template="todo/todo.html",
+
+    )
 
 
-
-@router.post("/create", response_class=RedirectResponse)
+@router.post("/create/", response_class=RedirectResponse)
 async def create_todo(
     request: Request,
     data:Annotated[TodoCreate,Form()],
@@ -44,7 +53,7 @@ async def create_todo(
             **data.model_dump()
         )
     await todo_service.create_todo(user_id, todo_data)
-    return RedirectResponse(url="/todos", status_code=303) 
+    return RedirectResponse(url="/todos/user/todos/", status_code=303) 
 
 
 @router.post("/update/{todo_id}", response_class=RedirectResponse)
@@ -59,7 +68,7 @@ async def update_todo(
         **data.model_dump()
     )
     await todo_service.update_todo(todo_id, user_id, update_data)
-    return RedirectResponse(url="/todos", status_code=303)
+    return RedirectResponse(url="/todos/user/todos/", status_code=303)
 
 
 
@@ -70,4 +79,4 @@ async def delete_todo(
     user_id: Annotated[int, Depends(require_login)],
 ) -> Any:
     await todo_service.delete_todo(todo_id, user_id)
-    return RedirectResponse(url="/todos", status_code=303)
+    return RedirectResponse(url="/todos/user/todos/", status_code=303)

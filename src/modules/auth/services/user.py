@@ -17,30 +17,7 @@ class UserAuthService:
         self.user_repository = user_repository
         self.logger=logger
 
-    
-    
-    # async def register(self,user_data:UserRegisterSchema) ->TokenResponse:
-    #     existing_user=await self.user_repository.get_by_email(user_data.email)
 
-    #     if existing_user:
-    #         self.logger.warning(f"Registration failed: Email already registered - {user_data.email}")
-    #         raise ValidationException(
-    #             errors=ERROR_MAPPER[EMAIL_ALREADY_EXISTS]
-    #         )
-        
-    #     hashed_password = password_handler.hash(user_data.password)
-    #     confirm_password=password_handler.hash(user_data.confirm_password)
-    #     created_user=await self.user_repository.create(
-    #         User(hashed_password=hashed_password,
-    #              confirm_password=confirm_password,
-    #              **user_data.model_dump(exclude={'password','confirm_password'}),
-    #              )
-    #     )
-
-    #     self.logger.info(f"User registered successfully: user_id={User.id}, email={User.email}")
-    #     tokens=self.generate_token(user_id=created_user.id)
-
-    #     return tokens
 
     async def register(self, user_data: UserRegisterSchema) -> TokenResponse:
         existing_user = await self.user_repository.get_by_email(user_data.email)

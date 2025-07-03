@@ -10,26 +10,23 @@ def get_current_user_id(request: Request) -> int:
     token = request.cookies.get("access_token")
     if not token:
         logger.warning("Missing access token in cookies")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        raise UnauthorizedException("Access token is missing. Please log in again.")
 
     try:
         payload = JWTHandler.decode(token)
         user_id = payload.get("user_id")
         if not user_id:
-            raise ValueError("Missing user_id in token payload")
+             raise UnauthorizedException("Invalid token: Missing user ID.")
         return int(user_id)
 
     except Exception as e:
-        logger.error(f"Token decoding failed: {e}")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
+        logger.error(f"Access token decoding failed: {e}")
+        raise UnauthorizedException("Your session has expired. Please log in again.")
 
 
 def require_login(request: Request) -> int:
     try:
         user_id = get_current_user_id(request)
-        if not user_id:
-            raise UnauthorizedException("Login required")
         return user_id
 
     except UnauthorizedException as e:

@@ -4,7 +4,8 @@ from typing import Any
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-
+from src.core.flash import get_flash_messages
+from src.core.auth import get_current_user_id
 
 class HtmlRenderer:
     def __init__(self):
@@ -30,6 +31,13 @@ class HtmlRenderer:
             context["data"] = {}
         if messages:
             context["messages"] = messages
+        context["messages"] = get_flash_messages(request)
+
+        try:
+            context["user_id"] = get_current_user_id(request)
+        except Exception:
+            context["user_id"] = None
+
 
         return await self.render_template(
             template,

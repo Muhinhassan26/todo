@@ -35,8 +35,8 @@ class NotFoundException(CustomException):
 
 class JWTError(CustomException):
     code = status.HTTP_403_FORBIDDEN
-    message = "Not authenticated"
+    message = "Token expired or invalid. Please log in again."
 
 class UnauthorizedException(Exception):
     code = status.HTTP_401_UNAUTHORIZED
-    message = "Not authenticated"
+    message = "Login Required"
