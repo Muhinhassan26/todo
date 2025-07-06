@@ -21,13 +21,14 @@ async def get_todo_list(
     request: Request,
     page: int = 1,  
     limit: int = 10, 
+    search:str | None = None,
 
 ) -> Any:
     
     skip = (page - 1) * limit
 
-    todos ,has_next= await todo_service.get_user_todos_paginated(user_id=user_id, skip=skip, limit=limit)
-    total = await todo_service.count_user_todos(user_id)
+    todos ,has_next= await todo_service.get_user_todos_paginated(user_id=user_id, skip=skip, limit=limit,search=search)
+    total = await todo_service.count_user_todos(user_id,search)
     total_pages = (total + limit - 1) // limit
 
     
@@ -40,6 +41,7 @@ async def get_todo_list(
             "limit": limit,
             "has_next":has_next,
             "total_pages": total_pages,
+            'search':search
         },
     )
 

@@ -21,15 +21,17 @@ class TodoService:
     
     async def get_user_todos_paginated(self,user_id:int,
                                        skip: int , 
-                                       limit: int ) -> List[Todo]:
+                                       limit: int ,
+                                       search: str = "",) -> List[Todo]:
         todos= await self.todo_repo.get_all_by_user_paginated(user_id=user_id,
                                                               skip=skip, 
-                                                              limit=limit+1)
+                                                              limit=limit+1,
+                                                              search=search)
         has_next=len(todos) > limit
         return todos[:limit],has_next
 
-    async def count_user_todos(self, user_id: int) -> int:
-        return await self.todo_repo.count_by_user(user_id)
+    async def count_user_todos(self, user_id: int,search: str = "",) -> int:
+        return await self.todo_repo.count_by_user(user_id,search=search)
 
 
     async def get_todo(self, todo_id: int, user_id: int) -> Todo:

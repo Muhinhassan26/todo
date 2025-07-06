@@ -19,14 +19,24 @@ class TodoRepository:
     async def get_all_by_user_paginated(self,
                                         user_id:int,
                                         skip:int,
-                                        limit:int=10) -> List[Todo]:
-        query=select(Todo).where(Todo.user_id ==
-                                user_id).order_by(Todo.created_at.desc()).offset(skip).limit(limit=limit)
-        result=await self.session.execute(query)
+                                        limit:int=10,
+                                        search: str | None = None,) -> List[Todo]:
+        
+        print(search, '----------------')
+        query = select(Todo).where(Todo.user_id == user_id)
+        if search:
+            query = query.where(Todo.title.ilike(f"%{search}%"))
+
+        query = query.order_by(Todo.created_at.desc()).offset(skip).limit(limit + 1)
+
+        result = await self.session.execute(query)
+        
         return result.scalars().all()
 
-    async def count_by_user(self, user_id: int) -> int:
+    async def count_by_user(self, user_id: int, search: str | None = None) -> int:
         query = select(func.count()).select_from(Todo).where(Todo.user_id == user_id)
+        if search:
+            query = query.where(Todo.title.ilike(f"%{search}%"))
         result = await self.session.execute(query)
         return result.scalar_one()
                                         
