@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse,RedirectResponse
 from src.core.auth import require_login
 from src.modules.todos.schemas import TodoCreate,TodoUpdate
 from src.core.error.exceptions import UnauthorizedException
-from src.core.flash import flash_message
+from typing import List
 
 
 
@@ -21,45 +21,32 @@ async def get_todo_list(
     request: Request,
     page: int = 1,  
     limit: int = 10, 
-    search:str | None = None,
+    search: str|None=None,
+    filter:str='all',
 
 ) -> Any:
     
     skip = (page - 1) * limit
 
-    todos ,has_next= await todo_service.get_user_todos_paginated(user_id=user_id, skip=skip, limit=limit,search=search)
-    total = await todo_service.count_user_todos(user_id,search)
+    todos ,has_next= await todo_service.get_user_todos_paginated(user_id=user_id, skip=skip, limit=limit,search=search,filter=filter)
+    total = await todo_service.count_user_todos(user_id,search,filter=filter)
     total_pages = (total + limit - 1) // limit
 
     
     return await renderer.render(
         request=request,
         template="todo/list.html",
-        data={
+        data={'user_id':user_id,
             "todos": todos,
             "page": page,
             "limit": limit,
             "has_next":has_next,
             "total_pages": total_pages,
-            'search':search
+            'search':search,
+            'filter':filter,
         },
     )
 
-
-# @router.get("/todos/", response_class=HTMLResponse)
-# async def get_todo_list(
-#     request: Request,
-#     todo_service: Annotated[TodoService, Depends()],
-#     user_id: Annotated[int, Depends(require_login)],
-# ) -> Any:
-    
-#     todos = await todo_service.get_user_todos(user_id)
-
-#     return await renderer.render(
-#         request=request,
-#         template="todo/list.html",
-#         data={"todos": todos}
-#     )
 
 
     
@@ -71,6 +58,9 @@ async def add_todo_form(
     return await renderer.render(
         request=request,
         template="todo/todo.html",
+        data={
+            'user_id':user_id
+        }
 
     )
 

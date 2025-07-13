@@ -20,23 +20,41 @@ class TodoRepository:
                                         user_id:int,
                                         skip:int,
                                         limit:int=10,
-                                        search: str | None = None,) -> List[Todo]:
+                                        search: str | None = None,
+                                        filter:str= 'all') -> List[Todo]:
         
         print(search, '----------------')
         query = select(Todo).where(Todo.user_id == user_id)
         if search:
-            query = query.where(Todo.title.ilike(f"%{search}%"))
+                query = query.where(Todo.title.ilike(f"%{search}%"))
+        if filter == "completed":
+            query = query.where(Todo.completed == True)
+        elif filter == "not_completed":
+            query = query.where(Todo.completed == False)
 
         query = query.order_by(Todo.created_at.desc()).offset(skip).limit(limit + 1)
 
         result = await self.session.execute(query)
         
         return result.scalars().all()
+    
 
-    async def count_by_user(self, user_id: int, search: str | None = None) -> int:
+    async def count_by_user(self, 
+                            user_id: int,
+                            search: List[str]  = [],
+                            filter:str='all',
+                            ) -> int:
         query = select(func.count()).select_from(Todo).where(Todo.user_id == user_id)
+       
         if search:
-            query = query.where(Todo.title.ilike(f"%{search}%"))
+            for term in search:
+                query = query.where(Todo.title.ilike(f"%{term}%"))
+
+        if filter == "completed":
+            query = query.where(Todo.completed == True)
+        elif filter == "not_completed":
+            query = query.where(Todo.completed == False)
+
         result = await self.session.execute(query)
         return result.scalar_one()
                                         
