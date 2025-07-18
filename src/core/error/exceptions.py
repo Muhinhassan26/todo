@@ -42,4 +42,6 @@ class UnauthorizedException(Exception):
     message = "Login Required"
 
 
-# class AlreadyLoggedIn(Exception):
+class InvalidCredentialsException(CustomException):
+    code=status.HTTP_401_UNAUTHORIZED
+    message= 'Incorrect password'

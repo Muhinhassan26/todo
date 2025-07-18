@@ -43,6 +43,7 @@ async def process_signup(
 async def get_login_page(request: Request) -> Any:
     renderer = HtmlRenderer()
     messages = get_flash_messages(request)
+  
     return await renderer.render(
         request=request,
         template="auth/login.html",
