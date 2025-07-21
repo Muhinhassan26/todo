@@ -2,9 +2,7 @@ from fastapi import FastAPI
 from src.core.config import settings
 from starlette.middleware.cors import CORSMiddleware
 from src.routers import api_router as template_router
-import os
-from fastapi.staticfiles import StaticFiles
-from src.core.middleware import CustomErrorMiddleware, validation_exception_handler
+from src.core.exception_handler import validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -35,8 +33,7 @@ class FastApiApp:
             allow_headers=["*"],
         )
 
-        self.app.add_middleware(CustomErrorMiddleware)
-        self.app.add_middleware(SessionMiddleware, secret_key="some-random-string")
+        
 
     
     def init_routers(self) -> None:
@@ -45,14 +42,6 @@ class FastApiApp:
     
 
     def create_app(self) -> FastAPI:
-        static_dir = os.path.join(os.path.dirname(__file__), "static")
-        print(static_dir, '----')
-        self.app.mount(
-            "/static",
-            StaticFiles(directory=static_dir, html=True),
-            name="static",
-        )
-        self.init_routers()
         return self.app
     
 

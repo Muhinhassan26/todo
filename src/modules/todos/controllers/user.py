@@ -1,106 +1,69 @@
-from fastapi import APIRouter,Request,Depends,Form
-from typing import Annotated,Any
+from fastapi import APIRouter, Depends, status, Query
+from typing import Annotated, List, Optional
 from src.modules.todos.services import TodoService
-from src.core.html_renderer import HtmlRenderer
-from fastapi.responses import HTMLResponse,RedirectResponse
+from src.modules.todos.schemas import TodoCreate, TodoUpdate, TodoRead
 from src.core.auth import require_login
-from src.modules.todos.schemas import TodoCreate,TodoUpdate
-from src.core.error.exceptions import UnauthorizedException
-from typing import List
 
 
-
-router = APIRouter(prefix="/user", tags=["Todos"])
-renderer = HtmlRenderer()
+router = APIRouter(prefix="/todos", tags=["Todos"])
 
 
-@router.get("/todos/", response_class=HTMLResponse)
-async def get_todo_list(
-    todo_service:Annotated[TodoService,Depends()],
-    user_id:Annotated[int,Depends(require_login)],
-    request: Request,
-    page: int = 1,  
-    limit: int = 10, 
-    search: str|None=None,
-    filter:str='all',
-
-) -> Any:
-    
-    skip = (page - 1) * limit
-
-    todos ,has_next= await todo_service.get_user_todos_paginated(user_id=user_id, skip=skip, limit=limit,search=search,filter=filter)
-    total = await todo_service.count_user_todos(user_id,search,filter=filter)
-    total_pages = (total + limit - 1) // limit
-
-    
-    return await renderer.render(
-        request=request,
-        template="todo/list.html",
-        data={'user_id':user_id,
-            "todos": todos,
-            "page": page,
-            "limit": limit,
-            "has_next":has_next,
-            "total_pages": total_pages,
-            'search':search,
-            'filter':filter,
-        },
-    )
-
-
-
-    
-@router.get("/create/", response_class=HTMLResponse)
-async def add_todo_form(
-    request: Request,
-    user_id: Annotated[int, Depends(require_login)]
-):
-    return await renderer.render(
-        request=request,
-        template="todo/todo.html",
-        data={
-            'user_id':user_id
-        }
-
-    )
-
-
-@router.post("/create/", response_class=RedirectResponse)
-async def create_todo(
-    request: Request,
-    data:Annotated[TodoCreate,Form()],
+@router.get("/", response_model=List[TodoRead])
+async def get_user_todos(
     todo_service: Annotated[TodoService, Depends()],
     user_id: Annotated[int, Depends(require_login)],
-) -> Any:
-     
-    todo_data = TodoCreate(
-            **data.model_dump()
-        )
-    await todo_service.create_todo(user_id, todo_data)
-    return RedirectResponse(url="/todos/user/todos/", status_code=303) 
+) -> List[TodoRead]:
+    return await todo_service.get_user_todos(user_id)
 
 
-@router.post("/update/{todo_id}", response_class=RedirectResponse)
+@router.get("/paginated", response_model=List[TodoRead])
+async def get_user_todos_paginated(
+    todo_service: Annotated[TodoService, Depends()],
+    user_id: Annotated[int, Depends(require_login)],
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, le=100),
+    search: Optional[str] = None,
+    filter: str = Query("all", regex="^(all|completed|not_completed)$"),
+):
+    skip = (page - 1) * limit
+    todos, has_next = await todo_service.get_user_todos_paginated(
+        user_id=user_id, skip=skip, limit=limit, search=search, filter=filter
+    )
+    return todos
+
+
+@router.get("/{todo_id}", response_model=TodoRead)
+async def get_todo(
+    todo_id: int,
+    todo_service: Annotated[TodoService, Depends()],
+    user_id: Annotated[int, Depends(require_login)],
+):
+    return await todo_service.get_todo(todo_id, user_id)
+
+
+@router.post("/", response_model=TodoRead, status_code=status.HTTP_201_CREATED)
+async def create_todo(
+    data: TodoCreate,
+    todo_service: Annotated[TodoService, Depends()],
+    user_id: Annotated[int, Depends(require_login)],
+):
+    return await todo_service.create_todo(user_id, data)
+
+
+@router.put("/{todo_id}", response_model=TodoRead)
 async def update_todo(
     todo_id: int,
-    request: Request,
-    data:Annotated[TodoUpdate,Form()],
+    data: TodoUpdate,
     todo_service: Annotated[TodoService, Depends()],
     user_id: Annotated[int, Depends(require_login)],
-) -> Any:
-    update_data = TodoUpdate(
-        **data.model_dump()
-    )
-    await todo_service.update_todo(todo_id, user_id, update_data)
-    return RedirectResponse(url="/todos/user/todos/", status_code=303)
+):
+    return await todo_service.update_todo(todo_id, user_id, data)
 
 
-
-@router.post("/delete/{todo_id}", response_class=RedirectResponse)
+@router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(
     todo_id: int,
     todo_service: Annotated[TodoService, Depends()],
     user_id: Annotated[int, Depends(require_login)],
-) -> Any:
+):
     await todo_service.delete_todo(todo_id, user_id)
-    return RedirectResponse(url="/todos/user/todos/", status_code=303)

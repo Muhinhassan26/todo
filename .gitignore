@@ -7,4 +7,5 @@ src/core/html_renderer
 src/modules/pages
 src/static
 src/templates
+src/core/middleware
 

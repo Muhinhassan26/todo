@@ -2,10 +2,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 import jwt
+from fastapi import HTTPException, status
 from src.core.config import settings
-from src.core.error.codes import UNAUTHORIZED_ERROR
-from src.core.error.exceptions import JWTError
-from src.core.error.format_error import ERROR_MAPPER
 from src.core.logger import logger
 from src.modules.auth.schemas import AccessTokenPayload, RefreshTokenPayload
 
@@ -43,7 +41,10 @@ class JWTHandler:
             return jwt.decode(token, JWTHandler.secret_key, algorithms=[JWTHandler.algorithm])
         except jwt.PyJWTError as exception:
             logger.error("JWT invalid %s", exception)
-            raise JWTError(errors=ERROR_MAPPER[UNAUTHORIZED_ERROR]) from exception
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired access token. Please log in again."
+            ) from exception
 
     @staticmethod
     def decode_expired(token: str) -> Any:
@@ -55,4 +56,8 @@ class JWTHandler:
                 options={"verify_exp": False},
             )
         except jwt.PyJWTError as exception:
-            raise JWTError(errors=ERROR_MAPPER[UNAUTHORIZED_ERROR]) from exception
+            logger.error("JWT decoding failed (even without expiry check): %s", exception)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token."
+            ) from exception
