@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from src.core.logger import logger
 from src.core.error.exceptions import ValidationException
 from src.core.flash import flash_message
+from starlette.status import HTTP_303_SEE_OTHER
 
 
 
@@ -35,7 +36,7 @@ async def process_signup(
 ) -> Any:
     
     await user_auth_service.register(user_data=data)
-    return RedirectResponse(url="/auth/user/login/")
+    return RedirectResponse(url="/auth/user/login/",status_code=HTTP_303_SEE_OTHER)
 
     
 
