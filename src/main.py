@@ -4,7 +4,7 @@ from starlette.middleware.cors import CORSMiddleware
 from src.routers import api_router as template_router
 from src.core.exception_handler import validation_exception_handler
 from fastapi.exceptions import RequestValidationError
-from starlette.middleware.sessions import SessionMiddleware
+
 
 class FastApiApp:
     def __init__(self) -> None:
@@ -19,6 +19,7 @@ class FastApiApp:
         )
         self.register_exception_handlers()
         self.make_middleware()
+        self.init_routers()
 
 
     def register_exception_handlers(self):

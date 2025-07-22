@@ -4,7 +4,7 @@ from fastapi import Depends
 from src.core.db import get_db
 from src.modules.users.models import User
 from sqlalchemy import select
-from src.modules.users.schemas import UserCreate
+
 
 
 class UserRepository:

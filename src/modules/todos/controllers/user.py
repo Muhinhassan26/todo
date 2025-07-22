@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, status, Query
 from typing import Annotated, List, Optional
 from src.modules.todos.services import TodoService
 from src.modules.todos.schemas import TodoCreate, TodoUpdate, TodoRead
-from src.core.auth import require_login
+from src.core.auth import get_current_user_id
 
 
-router = APIRouter(prefix="/todos", tags=["Todos"])
+router = APIRouter(prefix="/todos")
 
 
 @router.get("/", response_model=List[TodoRead])
 async def get_user_todos(
     todo_service: Annotated[TodoService, Depends()],
-    user_id: Annotated[int, Depends(require_login)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
 ) -> List[TodoRead]:
     return await todo_service.get_user_todos(user_id)
 
@@ -19,7 +19,7 @@ async def get_user_todos(
 @router.get("/paginated", response_model=List[TodoRead])
 async def get_user_todos_paginated(
     todo_service: Annotated[TodoService, Depends()],
-    user_id: Annotated[int, Depends(require_login)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
     page: int = Query(1, ge=1),
     limit: int = Query(10, le=100),
     search: Optional[str] = None,
@@ -36,7 +36,7 @@ async def get_user_todos_paginated(
 async def get_todo(
     todo_id: int,
     todo_service: Annotated[TodoService, Depends()],
-    user_id: Annotated[int, Depends(require_login)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
 ):
     return await todo_service.get_todo(todo_id, user_id)
 
@@ -45,7 +45,7 @@ async def get_todo(
 async def create_todo(
     data: TodoCreate,
     todo_service: Annotated[TodoService, Depends()],
-    user_id: Annotated[int, Depends(require_login)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
 ):
     return await todo_service.create_todo(user_id, data)
 
@@ -55,7 +55,7 @@ async def update_todo(
     todo_id: int,
     data: TodoUpdate,
     todo_service: Annotated[TodoService, Depends()],
-    user_id: Annotated[int, Depends(require_login)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
 ):
     return await todo_service.update_todo(todo_id, user_id, data)
 
@@ -64,6 +64,6 @@ async def update_todo(
 async def delete_todo(
     todo_id: int,
     todo_service: Annotated[TodoService, Depends()],
-    user_id: Annotated[int, Depends(require_login)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
 ):
     await todo_service.delete_todo(todo_id, user_id)

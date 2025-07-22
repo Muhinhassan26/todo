@@ -1,30 +1,11 @@
-from typing import  Any, Annotated
-from fastapi import APIRouter, Depends, Request, Form,status
-from fastapi.responses import HTMLResponse, RedirectResponse
-from src.core.html_renderer import HtmlRenderer
+from typing import  Annotated
+from fastapi import APIRouter, Depends, status
 from src.modules.auth.schemas import UserRegisterSchema,UserLoginSchema,TokenResponse
 from src.modules.auth.services import UserAuthService
-from src.core.flash import get_flash_messages
-from pydantic import ValidationError
 from src.core.logger import logger
-from src.core.error.exceptions import ValidationException
-from src.core.flash import flash_message
-
-
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter(prefix="/user")
-
-
-
-# @router.get("/signup/", response_class=HTMLResponse)
-# async def get_signup_page(request: Request) -> Any:
-#     renderer = HtmlRenderer()
-#     messages = get_flash_messages(request)
-#     return  await renderer.render(
-#         request=request,
-#         template="auth/signup.html",
-#         messages=messages,
-#     )
 
 
 @router.post("/signup/", response_model=UserRegisterSchema,status_code=status.HTTP_201_CREATED)
@@ -33,34 +14,18 @@ async def process_signup(
     user_auth_service: Annotated[UserAuthService, Depends(UserAuthService)],
 ) -> dict:
     
-    await user_auth_service.register(user_data=data)
-    return {"message": "User registered successfully"}
+    create_user=await user_auth_service.register(user_data=data)
+    return create_user
 
-    
-
-# @router.get("/login/", response_class=HTMLResponse)
-# async def get_login_page(request: Request) -> Any:
-#     renderer = HtmlRenderer()
-#     messages = get_flash_messages(request)
-  
-#     return await renderer.render(
-#         request=request,
-#         template="auth/login.html",
-#         messages=messages
-#     )
 
 @router.post('/login/',response_model=TokenResponse)
 async def process_login(
- 
-    data:UserLoginSchema,
-    user_auth_service:Annotated[UserAuthService,Depends(UserAuthService)]
- 
+    user_auth_service: Annotated[UserAuthService, Depends(UserAuthService)],
+    form_data: OAuth2PasswordRequestForm = Depends()
 ) -> TokenResponse:
-
-    tokens = await user_auth_service.login_user(login_data=data)
-        
-    logger.info(f"Login successful for user_id={tokens.user_id}")
-    return tokens
+     tokens = await user_auth_service.login_user(form_data)
+     logger.info(f"Login successful for user_id={tokens.user_id}")
+     return tokens
     
 
 @router.post("/logout/", status_code=status.HTTP_200_OK)

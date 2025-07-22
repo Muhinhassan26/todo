@@ -1,17 +1,12 @@
 from fastapi import Request, Depends, HTTPException, status
 from src.core.security import JWTHandler
+from fastapi.security import OAuth2PasswordBearer
 from src.core.logger import logger
 
-def get_current_user_id(request: Request) -> int:
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        logger.warning("Missing or invalid Authorization header")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization token missing or malformed. Use Bearer token in header."
-        )
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/user/login/")
 
-    token = auth_header.split(" ")[1]
+def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
+    
 
     try:
         payload = JWTHandler.decode(token)
@@ -31,5 +26,3 @@ def get_current_user_id(request: Request) -> int:
         )
 
 
-def require_login(request: Request) -> int:
-    return get_current_user_id(request)

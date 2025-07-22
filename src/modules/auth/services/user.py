@@ -11,6 +11,7 @@ from src.modules.auth.schemas import (
 from src.core.logger import logger
 from src.core.security import password_handler, JWTHandler
 from src.modules.users.models import User
+from fastapi.security import OAuth2PasswordRequestForm
 
 
 class UserAuthService:
@@ -66,18 +67,20 @@ class UserAuthService:
                 detail="Token generation failed."
             )
 
-    async def login_user(self, login_data: UserLoginSchema) -> TokenResponse:
-        user = await self.user_repository.get_by_email(login_data.email)
+    async def login_user(self, login_data: OAuth2PasswordRequestForm) -> TokenResponse:
+        email = login_data.username
+        password = login_data.password
+        user = await self.user_repository.get_by_email(email)
 
         if not user:
-            self.logger.warning(f"Login failed: Email not found - {login_data.email}")
+            self.logger.warning(f"Login failed: Email not found - {email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials: Email not found."
             )
 
-        if not password_handler.verify_password(login_data.password, user.hashed_password):
-            self.logger.warning(f"Login failed: Incorrect password for email - {login_data.email}")
+        if not password_handler.verify_password(password, user.hashed_password):
+            self.logger.warning(f"Login failed: Incorrect password for email - {email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials: Incorrect password."
