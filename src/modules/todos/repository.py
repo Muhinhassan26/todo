@@ -5,11 +5,12 @@ from fastapi import Depends
 from src.modules.todos.models import Todo
 from sqlalchemy import select,delete,func
 from src.modules.todos.schemas import TodoCreate,TodoUpdate
+from src.core.base.repository import BaseRepository
 
-class TodoRepository:
+class TodoRepository(BaseRepository[Todo]):
     def __init__(self,session: Annotated[AsyncSession, Depends(get_db)]):
         self.session=session
-
+        super().__init__(Todo, session)
     
     async def get_all_by_user(self, user_id: int) -> List[Todo]:
         query = select(Todo).where(Todo.user_id == user_id).order_by(Todo.created_at.desc())
@@ -23,7 +24,6 @@ class TodoRepository:
                                         search: str | None = None,
                                         filter:str= 'all') -> List[Todo]:
         
-        print(search, '----------------')
         query = select(Todo).where(Todo.user_id == user_id)
         if search:
                 query = query.where(Todo.title.ilike(f"%{search}%"))
@@ -60,37 +60,26 @@ class TodoRepository:
                                         
     
     async def get_by_id(self, todo_id: int, user_id: int) -> Optional[Todo]:
-        query= select(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)
-        result = await self.session.execute(query)
-        return result.scalars().first()
+        result = await self.session.execute(
+            select(self.model).where(self.model.id == todo_id, self.model.user_id == user_id)
+        )
+        return result.scalar_one_or_none()
     
     async def create(self, user_id: int, todo_data: TodoCreate) -> Todo:
-        new_todo = Todo(**todo_data.model_dump(), user_id=user_id)
-        self.session.add(new_todo)
-        await self.session.flush()  
-        await self.session.commit()
-        await self.session.refresh(new_todo)
-        return new_todo
+        return await super().create({**todo_data.model_dump(), "user_id": user_id})
+
     
     async def update(self, todo_id: int, user_id: int, update_data: TodoUpdate) -> Optional[Todo]:
-        query = select(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)
-        result = await self.session.execute(query)
-        todo = result.scalars().first()
-
+        todo = await self.get_by_id(todo_id, user_id)
         if not todo:
             return None
 
-        for field, value in update_data.model_dump(exclude_unset=True).items():
-            setattr(todo, field, value)
+        return await super().update(todo.id, update_data.model_dump(exclude_unset=True))
 
-        await self.session.flush()
-        await self.session.commit()
-        await self.session.refresh(todo)
-        return todo
     
     
     async def delete(self, todo_id: int, user_id: int) -> bool:
-        query= delete(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)
-        result = await self.session.execute(query)
-        await self.session.commit()
-        return result.rowcount > 0
+        todo = await self.get_by_id(todo_id, user_id)
+        if not todo:
+            return False
+        return await super().delete(todo.id)

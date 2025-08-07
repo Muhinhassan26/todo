@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 from typing import AsyncGenerator
 from src.core.config import settings
+from typing import TypeVar
 
 DATABASE_URL = settings.DATABASE_URL
 
@@ -21,3 +22,5 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+ModelType=TypeVar('ModelType',bound=Base)
