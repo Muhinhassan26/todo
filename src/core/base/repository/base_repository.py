@@ -22,16 +22,15 @@ class BaseRepository(Generic[ModelType]):
         result = await self.session.execute(select(self.model))
         return result.scalars().all()
 
-    async def create(self, data: dict) -> ModelType:
+    async def create(self, instance: ModelType) -> ModelType:
         """Accepts a dictionary and creates an instance of the model."""
-        instance = self.model(**data)
         self.session.add(instance)
         await self.session.flush()
         await self.session.commit()
         await self.session.refresh(instance)
         return instance
 
-    async def update(self, id_: int, update_data: dict) -> Optional[ModelType]:
+    async def update(self, id_: int, update_data: ModelType) -> Optional[ModelType]:
         """Fetch object by ID and update with given fields."""
         obj = await self.get_by_id(id_)
         if not obj:

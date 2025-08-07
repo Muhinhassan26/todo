@@ -24,6 +24,7 @@ class TodoRepository(BaseRepository[Todo]):
                                         search: str | None = None,
                                         filter:str= 'all') -> List[Todo]:
         
+
         query = select(Todo).where(Todo.user_id == user_id)
         if search:
                 query = query.where(Todo.title.ilike(f"%{search}%"))
@@ -65,9 +66,10 @@ class TodoRepository(BaseRepository[Todo]):
         )
         return result.scalar_one_or_none()
     
-    async def create(self, user_id: int, todo_data: TodoCreate) -> Todo:
-        return await super().create({**todo_data.model_dump(), "user_id": user_id})
 
+    async def create(self, user_id: int, todo_data: TodoCreate) -> Todo:
+        todo = Todo(**todo_data.model_dump(), user_id=user_id)
+        return await super().create(todo)
     
     async def update(self, todo_id: int, user_id: int, update_data: TodoUpdate) -> Optional[Todo]:
         todo = await self.get_by_id(todo_id, user_id)
