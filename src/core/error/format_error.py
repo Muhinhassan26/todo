@@ -9,7 +9,7 @@ ERROR_MAPPER = {
     INTERNAL_ERROR: "Internal Server Error",
     INVALID_CRED: "Invalid credentials",
     NOT_AUTHORIZED: "You are not authorized to perform this action",
-    EMAIL_ALREADY_EXISTS: "Email already in use"
+    EMAIL_ALREADY_EXISTS: "Email already in use",
 }
 
 

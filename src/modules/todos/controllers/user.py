@@ -5,8 +5,8 @@ from src.core.html_renderer import HtmlRenderer
 from fastapi.responses import HTMLResponse,RedirectResponse
 from src.core.auth import require_login
 from src.modules.todos.schemas import TodoCreate,TodoUpdate
-from src.core.error.exceptions import UnauthorizedException
-from typing import List
+from src.core.schemas.common import QueryParams
+
 
 
 
@@ -19,27 +19,35 @@ async def get_todo_list(
     todo_service:Annotated[TodoService,Depends()],
     user_id:Annotated[int,Depends(require_login)],
     request: Request,
-    page: int = 1,  
-    limit: int = 10, 
+    pagination:Annotated[QueryParams,Depends()], 
     search: str|None=None,
     filter:str='all',
 
 ) -> Any:
     
-    skip = (page - 1) * limit
+    search_fields=["title","description"]
 
-    todos ,has_next= await todo_service.get_user_todos_paginated(user_id=user_id, skip=skip, limit=limit,search=search,filter=filter)
-    total = await todo_service.count_user_todos(user_id,search,filter=filter)
-    total_pages = (total + limit - 1) // limit
+    todos, total_count = await todo_service.get_user_todos_paginated(
+        user_id=user_id,
+        search_fields=search_fields,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        search=search,
+        filter_by=filter,
+    )
 
-    
+    has_next=pagination.page * pagination.page_size < total_count
+
+    total_pages = (total_count + pagination.page_size - 1) // pagination.page_size
+
+
     return await renderer.render(
         request=request,
         template="todo/list.html",
         data={'user_id':user_id,
             "todos": todos,
-            "page": page,
-            "limit": limit,
+            "page": pagination.page,
+            "limit": pagination.page_size,
             "has_next":has_next,
             "total_pages": total_pages,
             'search':search,
@@ -73,10 +81,8 @@ async def create_todo(
     user_id: Annotated[int, Depends(require_login)],
 ) -> Any:
      
-    todo_data = TodoCreate(
-            **data.model_dump()
-        )
-    await todo_service.create_todo(user_id, todo_data)
+
+    await todo_service.create_todo(user_id, data)
     return RedirectResponse(url="/todos/user/todos/", status_code=303) 
 
 
@@ -102,5 +108,5 @@ async def delete_todo(
     todo_service: Annotated[TodoService, Depends()],
     user_id: Annotated[int, Depends(require_login)],
 ) -> Any:
-    await todo_service.delete_todo(todo_id, user_id)
+    await todo_service.delete_todo(user_id=user_id, todo_id=todo_id)
     return RedirectResponse(url="/todos/user/todos/", status_code=303)

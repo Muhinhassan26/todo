@@ -7,7 +7,7 @@ from src.modules.auth.services import UserAuthService
 from src.core.flash import get_flash_messages
 from pydantic import ValidationError
 from src.core.logger import logger
-from src.core.error.exceptions import ValidationException
+from src.core.error.exceptions import InvalidCredentialsException
 from src.core.flash import flash_message
 from starlette.status import HTTP_303_SEE_OTHER
 

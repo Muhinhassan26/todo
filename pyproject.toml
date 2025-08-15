@@ -1,4 +1,9 @@
 [project]
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "W", "I"]
+ignore = ["E203", "W503"]
+exclude = ["venv", "__pycache__"]
 name = "todo"
 version = "0.1.0"
 description = "Add your description here"
@@ -15,6 +20,7 @@ dependencies = [
     "pydantic-settings>=2.10.0",
     "pyjwt>=2.10.1",
     "python-jose>=3.5.0",
+    "ruff>=0.12.9",
     "sqlalchemy>=2.0.41",
     "uvicorn>=0.34.3",
 ]

@@ -5,7 +5,7 @@ from datetime import datetime
 
 class TodoCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
     priority: int = Field(ge=1, le=5) 
     completed: bool = False
 

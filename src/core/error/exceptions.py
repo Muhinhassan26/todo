@@ -1,5 +1,7 @@
-
 from fastapi import status
+from src.core.error.codes import INVALID_CRED
+
+
 
 class CustomException(Exception):
     code = status.HTTP_502_BAD_GATEWAY
@@ -20,8 +22,6 @@ class CustomException(Exception):
 class DatabaseException(CustomException):
     code = status.HTTP_500_INTERNAL_SERVER_ERROR
     message = "Database Error"
-
-
 
 class ValidationException(CustomException):
     code = status.HTTP_400_BAD_REQUEST
@@ -44,4 +44,5 @@ class UnauthorizedException(Exception):
 
 class InvalidCredentialsException(CustomException):
     code=status.HTTP_401_UNAUTHORIZED
-    message= 'Incorrect password'
+    error_code=INVALID_CRED
+    message= "Invalid login details. Please try again."
