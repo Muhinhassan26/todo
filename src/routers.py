@@ -1,9 +1,8 @@
 from fastapi import APIRouter
 
 from src.modules.auth.ssr_routers import api_router as auth_router
-from src.modules.todos.ssr_routers import api_router as todo_router
 from src.modules.pages.home.controllers import api_router as home_router
- 
+from src.modules.todos.ssr_routers import api_router as todo_router
 
 api_router = APIRouter()
 

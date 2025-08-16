@@ -1,9 +1,9 @@
-from typing import Any
-
 from starlette.requests import Request
 
 
-def flash_message(request: Request, msg: str, errors: dict[str, str] | None = None, category: str = "default") -> None:
+def flash_message(
+    request: Request, msg: str, errors: dict[str, str] | None = None, category: str = "default"
+) -> None:
     if "_messages" not in request.session:
         request.session["_messages"] = []
 
@@ -19,7 +19,6 @@ def flash_message(request: Request, msg: str, errors: dict[str, str] | None = No
                 request.session["_messages"].append({"message": full_msg, "category": category})
         else:
             request.session["_messages"].append({"message": errors, "category": category})
-
 
 
 def get_flash_messages(request: Request) -> list:

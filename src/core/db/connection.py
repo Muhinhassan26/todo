@@ -1,13 +1,15 @@
+from collections.abc import AsyncGenerator
+from typing import TypeVar
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from typing import AsyncGenerator
 from src.core.config import settings
-from typing import TypeVar
 
 DATABASE_URL = settings.DATABASE_URL
 
 engine = create_async_engine(DATABASE_URL, echo=settings.DEBUG)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
 
 class Base(DeclarativeBase):
     pass
@@ -23,4 +25,5 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         finally:
             await session.close()
 
-ModelType=TypeVar('ModelType',bound=Base)
+
+ModelType = TypeVar("ModelType", bound=Base)

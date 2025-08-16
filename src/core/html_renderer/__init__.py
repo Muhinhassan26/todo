@@ -4,18 +4,17 @@ from typing import Any
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from src.core.flash import get_flash_messages
 from src.core.auth import get_current_user_id
+from src.core.flash import get_flash_messages
+
 
 class HtmlRenderer:
     def __init__(self):
         templates_directory = os.path.join(os.path.dirname(__file__), "../../templates")
         self.templates = Jinja2Templates(
             directory=templates_directory,
-                
         )
 
-    
     async def render(
         self,
         request: Request,
@@ -38,13 +37,12 @@ class HtmlRenderer:
         except Exception:
             context["user_id"] = None
 
-
         return await self.render_template(
             template,
             context,
             status_code,
         )
-    
+
     async def render_template(
         self,
         template_name: str,

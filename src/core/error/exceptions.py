@@ -2,26 +2,22 @@ from fastapi import status
 from src.core.error.codes import INVALID_CRED
 
 
-
 class CustomException(Exception):
     code = status.HTTP_502_BAD_GATEWAY
     message = "Bad Gateway"
 
-
     def __init__(self, message: str | None = None, errors: dict[str, str] | None = None) -> None:
         self.message = message or self.message
         self.errors = errors or {}
-        
-        
+
     def __str__(self) -> str:
         return f"{self.message} -> {self.errors if self.errors else ''}"
-
-    
 
 
 class DatabaseException(CustomException):
     code = status.HTTP_500_INTERNAL_SERVER_ERROR
     message = "Database Error"
+
 
 class ValidationException(CustomException):
     code = status.HTTP_400_BAD_REQUEST
@@ -37,12 +33,13 @@ class JWTError(CustomException):
     code = status.HTTP_403_FORBIDDEN
     message = "Token expired or invalid. Please log in again."
 
+
 class UnauthorizedException(Exception):
     code = status.HTTP_401_UNAUTHORIZED
     message = "Login Required"
 
 
 class InvalidCredentialsException(CustomException):
-    code=status.HTTP_401_UNAUTHORIZED
-    error_code=INVALID_CRED
-    message= "Invalid login details. Please try again."
+    code = status.HTTP_401_UNAUTHORIZED
+    error_code = INVALID_CRED
+    message = "Invalid login details. Please try again."

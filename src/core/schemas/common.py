@@ -1,5 +1,7 @@
 from typing import Any
+
 from pydantic import BaseModel, Field
+
 
 class QueryParams(BaseModel):
     page: int = Field(1, ge=1, description="The page number to retrieve")
@@ -22,5 +24,5 @@ class FilterOptions(BaseModel):
 
     use_or: bool = False
     distinct_on: str | None = None
-    #raw_query: str | None = None
+    # raw_query: str | None = None
     or_filters: set[str] | None = None

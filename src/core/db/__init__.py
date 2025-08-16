@@ -1,4 +1,4 @@
-from .connection import get_db, Base,ModelType
+from .connection import Base, ModelType, get_db
 from .helpers import operators_map
 
 __all__ = [

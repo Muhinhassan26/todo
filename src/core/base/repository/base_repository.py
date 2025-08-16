@@ -1,37 +1,34 @@
-from typing import Generic, Type,Any,Sequence
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.core.db import ModelType
-from sqlalchemy import func,Select
-from sqlalchemy.orm import joinedload,selectinload,RelationshipProperty
-from src.core.db import operators_map
-from src.core.schemas.common import FilterOptions 
+from collections.abc import Callable, Sequence
+from typing import Any, Generic
+
 from pydantic import BaseModel
 from sqlalchemy import (
     JSON,
     Select,
     and_,
     cast,
+    delete,
     func,
     or_,
     select,
     update,
-    delete,
 )
-from collections.abc import Callable
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import RelationshipProperty, joinedload, selectinload
+from src.core.db import ModelType, operators_map
+from src.core.schemas.common import FilterOptions
 
-class BaseRepository(Generic[ModelType]):
-    def __init__(self, model: Type[ModelType], session: Callable[[], AsyncSession]):
+
+class BaseRepository(Generic[ModelType]):  # noqa: UP046
+    def __init__(self, model: type[ModelType], session: Callable[[], AsyncSession]):
         self.model = model
         self.session = session
-
 
     def _get_query(
         self,
         prefetch: tuple[str, ...] | None = None,
         options: list[Any] | None = None,
     ) -> Select[tuple[ModelType]]:
-        
-
         query = select(self.model)
 
         if prefetch:
@@ -39,16 +36,15 @@ class BaseRepository(Generic[ModelType]):
                 options = []
             for relation in prefetch:
                 attr = getattr(self.model, relation)
-                
+
                 if hasattr(attr, "property") and isinstance(attr.property, RelationshipProperty):
                     if attr.property.uselist:
-                        options.append(selectinload(attr))  
+                        options.append(selectinload(attr))
                     else:
-                        options.append(joinedload(attr))  
+                        options.append(joinedload(attr))
             query = query.options(*options).execution_options(populate_existing=True)
 
         return query
-    
 
     def _build_sorting(self, sorting: dict[str, str]) -> list[Any]:
         """Build list of ORDER_BY clauses."""
@@ -57,7 +53,6 @@ class BaseRepository(Generic[ModelType]):
             field = getattr(self.model, field_name)
             result.append(getattr(field, direction)())
         return result
-    
 
     def _build_filters(self, filters: dict[str, Any]) -> list[Any]:
         """Build list of WHERE conditions."""
@@ -72,37 +67,35 @@ class BaseRepository(Generic[ModelType]):
             column = getattr(self.model, parts[0])
             result.append(operator(column, value))
         return result
-    
 
-    async def get_by_id(self,
-                        obj_id: int,
-                        filter_options:FilterOptions,
-                        ) -> ModelType | None:
+    async def get_by_id(
+        self,
+        obj_id: int,
+        filter_options: FilterOptions,
+    ) -> ModelType | None:
         query = self._get_query(prefetch=filter_options.prefetch).where(self.model.id == obj_id)
 
         async with self.session as session:
-            result=await session.execute(query)
+            result = await session.execute(query)
             return result.scalars().first()
-        
 
-    async def list_all(self,
-                      filter_options:FilterOptions,
-                      ) -> list[ModelType]:
-        
-        query= self._get_query(filter_options.prefetch)
+    async def list_all(
+        self,
+        filter_options: FilterOptions,
+    ) -> list[ModelType]:
+        query = self._get_query(filter_options.prefetch)
 
         if filter_options.sorting is not None:
-            query=query.order_by(*self._build_sorting(sorting=filter_options.sorting))
+            query = query.order_by(*self._build_sorting(sorting=filter_options.sorting))
 
         async with self.session as session:
-            result=await session.execute(query)
+            result = await session.execute(query)
             return result.scalars().all()
-        
 
-    async def get_by_filed(self,
-                           filter_options:FilterOptions,
-                           )  -> ModelType | None:
-
+    async def get_by_filed(
+        self,
+        filter_options: FilterOptions,
+    ) -> ModelType | None:
         query = self._get_query(prefetch=filter_options.prefetch)
 
         if filter_options.distinct_on:
@@ -114,7 +107,7 @@ class BaseRepository(Generic[ModelType]):
         or_conditions = []
         and_conditions = []
 
-        filters=self._build_filters(filter_options.filters)
+        filters = self._build_filters(filter_options.filters)
 
         for filter_expr in filters:
             if hasattr(filter_expr, "left") and hasattr(filter_expr.left, "key"):
@@ -138,18 +131,16 @@ class BaseRepository(Generic[ModelType]):
             db_execute = await session.execute(query.where(final_condition))  # type: ignore
             return db_execute.scalars().first()
 
-
     # async def filters(self,
     #                   filters: dict[str, Any],
     #                   prefetch:tuple[str,...]|None=None,) -> list[ModelType]:
- 
+
     #     query = self._get_query(prefetch=prefetch)
     #     for field, value in filters.items():
     #         query = query.where(getattr(self.model, field) == value)
 
     #     result = await self.session.execute(query)
     #     return result.scalars().all()
-    
 
     async def filter(
         self,
@@ -163,7 +154,6 @@ class BaseRepository(Generic[ModelType]):
             if filter_options.sorting is not None:
                 query = query.order_by(*self._build_sorting(filter_options.sorting))
 
-            
             filters = self._build_filters(filter_options.filters)
 
             or_conditions = []
@@ -193,19 +183,16 @@ class BaseRepository(Generic[ModelType]):
             result = await session.execute(query)
             return result.scalars().all()
 
-
-
-    async def paginate_filters(self,
-                               filter_options:FilterOptions,
-                               ) -> tuple[Sequence[ModelType] , int]:
-
+    async def paginate_filters(
+        self,
+        filter_options: FilterOptions,
+    ) -> tuple[Sequence[ModelType], int]:
         query = self._get_query(prefetch=filter_options.prefetch)
 
         if filter_options.sorting is not None:
             query = query.order_by(*self._build_sorting(filter_options.sorting))
-        
-        filters = self._build_filters(filter_options.filters)
 
+        filters = self._build_filters(filter_options.filters)
 
         or_conditions = []
         and_conditions = []
@@ -241,7 +228,6 @@ class BaseRepository(Generic[ModelType]):
             final_condition = and_(*combined_conditions) if combined_conditions else None
 
         async with self.session as session:
-
             total_query = select(func.count()).select_from(self.model)
             if final_condition is not None:
                 total_query = total_query.where(final_condition)
@@ -256,13 +242,12 @@ class BaseRepository(Generic[ModelType]):
                 query = query.where(final_condition)
             db_execute = await session.execute(query)
             result = db_execute.scalars().all()
-        
-        return  result, total
-        
+
+        return result, total
 
         # for field, value in filters.items():
         #     query = query.where(getattr(self.model, field) == value)
-        
+
         # if search and search_fields:
         #     search_conditions = [
         #         getattr(self.model, field).ilike(f"%{search}%")
@@ -276,7 +261,7 @@ class BaseRepository(Generic[ModelType]):
 
         # count_query = select(func.count()).select_from(query.subquery())
         # total_count = (await self.session.execute(count_query)).scalar_one()
-        
+
         # if order_by is not None:
         #     query = query.order_by(order_by)
 
@@ -286,7 +271,6 @@ class BaseRepository(Generic[ModelType]):
 
         # return items, total_count
 
-
     async def create(self, obj: ModelType) -> ModelType:
         async with self.session as session:
             session.add(obj)
@@ -294,14 +278,12 @@ class BaseRepository(Generic[ModelType]):
             await session.refresh(obj)
         return obj
 
-
-    async def update(self,
-                     filter_options:FilterOptions,
-                     values:ModelType,
-                     
-                     ) -> ModelType | None:
+    async def update(
+        self,
+        filter_options: FilterOptions,
+        values: ModelType,
+    ) -> ModelType | None:
         async with self.session as session:
-
             filters = self._build_filters(filter_options.filters)
             update_values = values.model_dump(exclude_unset=True)
 
@@ -311,24 +293,18 @@ class BaseRepository(Generic[ModelType]):
                         cast(value, JSON)
                     )
 
-            query = (
-            update(self.model)
-            .where(and_(*filters))
-            .values(**update_values)
-            )
+            query = update(self.model).where(and_(*filters)).values(**update_values)
 
             result = await session.execute(query)
             await session.commit()
             return result.rowcount
-        
 
-    async def create_and_update(self,
-                                filter_options:FilterOptions,
-                                values:BaseModel,
-                                )-> ModelType:
-        
+    async def create_and_update(
+        self,
+        filter_options: FilterOptions,
+        values: BaseModel,
+    ) -> ModelType:
         async with self.session as session:
-
             filters = self._build_filters(filter_options.filters)
             update_values = values.model_dump(exclude_unset=True)
 
@@ -337,7 +313,7 @@ class BaseRepository(Generic[ModelType]):
                     update_values[key] = cast(getattr(self.model, key), JSON).concat(
                         cast(value, JSON)
                     )
-            
+
             query = select(self.model).where(and_(*filters))
             existing_obj = await session.execute(query)
             existing_obj = existing_obj.scalars().first()
@@ -349,7 +325,7 @@ class BaseRepository(Generic[ModelType]):
                 await session.commit()
                 await session.refresh(existing_obj)
                 return existing_obj
-            
+
             new_obj = self.model(**update_values)
             session.add(new_obj)
             await session.commit()
@@ -362,7 +338,7 @@ class BaseRepository(Generic[ModelType]):
         #     query = query.where(getattr(self.model, field) == value)
         # result = await self.session.execute(query)
         # obj = result.scalar_one_or_none()
-        
+
         # if not obj:
         #     return None
 
@@ -381,16 +357,8 @@ class BaseRepository(Generic[ModelType]):
     #     )
     #     await self.session.commit()
     #     return result.rowcount > 0
-    
 
-
-    async def delete(
-        self, filter_options: FilterOptions
-    ) -> int:
-        """
-        Delete rows matching the given filter options.
-        Returns the number of deleted rows.
-        """
+    async def delete(self, filter_options: FilterOptions) -> int:
         async with self.session as session:
             filters = self._build_filters(filter_options.filters)
 

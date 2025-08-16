@@ -1,5 +1,3 @@
 from .todos import TodoService
 
-__all__=[
-    'TodoService'
-]
+__all__ = ["TodoService"]

@@ -1,6 +1,5 @@
 from typing import Any
 
-
 from sqlalchemy.sql import operators
 
 operators_map: dict[str, Any] = {
@@ -23,4 +22,3 @@ operators_map: dict[str, Any] = {
     "iendswith": lambda c, v: c.ilike("%" + v),
     "overlaps": lambda c, v: c.overlaps(v),
 }
-

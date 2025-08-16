@@ -1,4 +1,14 @@
-from src.core.error.codes import *
+from src.core.error.codes import (
+    EMAIL_ALREADY_EXISTS,
+    FORBIDDEN_ERROR,
+    INTERNAL_ERROR,
+    INVALID_CRED,
+    INVALID_USER,
+    NO_DATA,
+    NOT_AUTHORIZED,
+    UNAUTHORIZED_ERROR,
+    USER_EXISTS,
+)
 
 ERROR_MAPPER = {
     USER_EXISTS: "User with this phone number already exists",
@@ -13,7 +23,10 @@ ERROR_MAPPER = {
 }
 
 
-def field_error_format(errors: list[dict[str, str]], is_pydantic_validation_error: bool = False) -> dict[str, str]:
+def field_error_format(
+    errors: list[dict[str, str]],
+    is_pydantic_validation_error: bool = False,  # noqa: ARG001
+) -> dict[str, str]:
     formatted_errors: dict[str, str] = {}
 
     for error in errors:
