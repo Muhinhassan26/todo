@@ -10,5 +10,5 @@ async def validation_exception_handler(
 ) -> None:
     details = exc.errors()
 
-    errors = field_error_format(details, is_pydantic_validation_error=True)
+    errors = field_error_format(details, is_pydantic_validation_error=True)  # type: ignore
     raise ValidationException(errors=errors)

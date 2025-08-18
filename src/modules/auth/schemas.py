@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
@@ -11,7 +12,8 @@ class UserRegisterSchema(BaseModel):
     confirm_password: str = Field(..., min_length=6, max_length=128)
 
     @model_validator(mode="before")
-    def passwords_match(cls, values):  # noqa: N805
+    @classmethod
+    def passwords_match(cls, values: dict[str, Any]) -> dict[str, Any]:
         pw = values.get("password")
         confirm_pw = values.get("confirm_password")
         if pw != confirm_pw:

@@ -1,18 +1,9 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from typing import Any, Generic
 
 from pydantic import BaseModel
-from sqlalchemy import (
-    JSON,
-    Select,
-    and_,
-    cast,
-    delete,
-    func,
-    or_,
-    select,
-    update,
-)
+from sqlalchemy import JSON, Select, and_, cast, delete, func, or_, select, update
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import RelationshipProperty, joinedload, selectinload
 from src.core.db import ModelType, operators_map
@@ -20,7 +11,7 @@ from src.core.schemas.common import FilterOptions
 
 
 class BaseRepository(Generic[ModelType]):  # noqa: UP046
-    def __init__(self, model: type[ModelType], session: Callable[[], AsyncSession]):
+    def __init__(self, model: type[ModelType], session: AsyncSession):
         self.model = model
         self.session = session
 
@@ -65,6 +56,13 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
                 raise KeyError(msg)
             operator = operators_map[op_name]
             column = getattr(self.model, parts[0])
+
+            if isinstance(column.type.python_type, type) and column.type.python_type is bool:  # noqa: SIM102
+                if isinstance(value, str):
+                    if value.lower() in ("1", "true", "t", "yes", "True"):
+                        value = True
+                    elif value.lower() in ("0", "false", "f", "no", "False"):
+                        value = False
             result.append(operator(column, value))
         return result
 
@@ -73,24 +71,24 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
         obj_id: int,
         filter_options: FilterOptions,
     ) -> ModelType | None:
-        query = self._get_query(prefetch=filter_options.prefetch).where(self.model.id == obj_id)
+        query = self._get_query(prefetch=filter_options.prefetch).where(self.model.id == obj_id)  # type:ignore
 
-        async with self.session as session:
-            result = await session.execute(query)
-            return result.scalars().first()
+        session = self.session
+        result = await session.execute(query)
+        return result.scalars().first()
 
     async def list_all(
         self,
         filter_options: FilterOptions,
-    ) -> list[ModelType]:
+    ) -> Sequence[ModelType]:
         query = self._get_query(filter_options.prefetch)
 
         if filter_options.sorting is not None:
             query = query.order_by(*self._build_sorting(sorting=filter_options.sorting))
 
-        async with self.session as session:
-            result = await session.execute(query)
-            return result.scalars().all()
+        session = self.session
+        result = await session.execute(query)
+        return result.scalars().all()
 
     async def get_by_filed(
         self,
@@ -127,9 +125,9 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
             if or_conditions:
                 combined_conditions.append(or_(*or_conditions))
             final_condition = and_(*combined_conditions) if combined_conditions else None
-        async with self.session as session:
-            db_execute = await session.execute(query.where(final_condition))  # type: ignore
-            return db_execute.scalars().first()
+        session = self.session
+        db_execute = await session.execute(query.where(final_condition))  # type: ignore
+        return db_execute.scalars().first()
 
     # async def filters(self,
     #                   filters: dict[str, Any],
@@ -145,43 +143,43 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
     async def filter(
         self,
         filter_options: FilterOptions,  # same object you pass to get_field
-    ) -> list[ModelType]:
-        async with self.session as session:
-            query = self._get_query(prefetch=filter_options.prefetch)
+    ) -> Sequence[ModelType]:
+        session = self.session
+        query = self._get_query(prefetch=filter_options.prefetch)
 
-            if filter_options.distinct_on:
-                query = query.distinct(getattr(self.model, filter_options.distinct_on))
-            if filter_options.sorting is not None:
-                query = query.order_by(*self._build_sorting(filter_options.sorting))
+        if filter_options.distinct_on:
+            query = query.distinct(getattr(self.model, filter_options.distinct_on))
+        if filter_options.sorting is not None:
+            query = query.order_by(*self._build_sorting(filter_options.sorting))
 
-            filters = self._build_filters(filter_options.filters)
+        filters = self._build_filters(filter_options.filters)
 
-            or_conditions = []
-            and_conditions = []
+        or_conditions = []
+        and_conditions = []
 
-            for filter_expr in filters:
-                if hasattr(filter_expr, "left") and hasattr(filter_expr.left, "key"):
-                    if (
-                        filter_options.or_filters is not None
-                        and filter_expr.left.key in filter_options.or_filters
-                    ):
-                        or_conditions.append(filter_expr)
-                    else:
-                        and_conditions.append(filter_expr)
-            final_condition = None
-            if and_conditions or or_conditions:
-                combined_conditions = []
-                if and_conditions:
-                    combined_conditions.append(and_(*and_conditions))
-                if or_conditions:
-                    combined_conditions.append(or_(*or_conditions))
-                final_condition = and_(*combined_conditions) if combined_conditions else None
+        for filter_expr in filters:
+            if hasattr(filter_expr, "left") and hasattr(filter_expr.left, "key"):
+                if (
+                    filter_options.or_filters is not None
+                    and filter_expr.left.key in filter_options.or_filters
+                ):
+                    or_conditions.append(filter_expr)
+                else:
+                    and_conditions.append(filter_expr)
+        final_condition = None
+        if and_conditions or or_conditions:
+            combined_conditions = []
+            if and_conditions:
+                combined_conditions.append(and_(*and_conditions))
+            if or_conditions:
+                combined_conditions.append(or_(*or_conditions))
+            final_condition = and_(*combined_conditions) if combined_conditions else None
 
-            if final_condition is not None:
-                query = query.where(final_condition)
+        if final_condition is not None:
+            query = query.where(final_condition)
 
-            result = await session.execute(query)
-            return result.scalars().all()
+        result = await session.execute(query)
+        return result.scalars().all()
 
     async def paginate_filters(
         self,
@@ -227,21 +225,21 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
 
             final_condition = and_(*combined_conditions) if combined_conditions else None
 
-        async with self.session as session:
-            total_query = select(func.count()).select_from(self.model)
-            if final_condition is not None:
-                total_query = total_query.where(final_condition)
-            total = await session.scalar(total_query) or 0
+        session = self.session
+        total_query = select(func.count()).select_from(self.model)
+        if final_condition is not None:
+            total_query = total_query.where(final_condition)
+        total = await session.scalar(total_query) or 0
 
-            if filter_options.pagination:
-                query = query.offset(filter_options.pagination.skip).limit(
-                    filter_options.pagination.page_size
-                )
+        if filter_options.pagination:
+            query = query.offset(filter_options.pagination.skip).limit(
+                filter_options.pagination.page_size
+            )
 
-            if final_condition is not None:
-                query = query.where(final_condition)
-            db_execute = await session.execute(query)
-            result = db_execute.scalars().all()
+        if final_condition is not None:
+            query = query.where(final_condition)
+        db_execute = await session.execute(query)
+        result = db_execute.scalars().all()
 
         return result, total
 
@@ -272,65 +270,61 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
         # return items, total_count
 
     async def create(self, obj: ModelType) -> ModelType:
-        async with self.session as session:
-            session.add(obj)
-            await session.commit()
-            await session.refresh(obj)
+        session = self.session
+        session.add(obj)
+        await session.commit()
+        await session.refresh(obj)
         return obj
 
-    async def update(
-        self,
-        filter_options: FilterOptions,
-        values: ModelType,
-    ) -> ModelType | None:
-        async with self.session as session:
-            filters = self._build_filters(filter_options.filters)
-            update_values = values.model_dump(exclude_unset=True)
+    async def update_obj(self, where: dict[str, Any], values: dict[str, Any]) -> int:
+        session = self.session
+        filters = self._build_filters(where)
 
-            for key, value in list(update_values.items()):
-                if isinstance(value, dict) and isinstance(getattr(self.model, key).type, JSON):
-                    update_values[key] = cast(getattr(self.model, key), JSON).concat(
-                        cast(value, JSON)
-                    )
+        # Convert column names to strings for `values`
+        update_values = {}
+        for key, value in values.items():
+            if isinstance(value, dict) and isinstance(getattr(self.model, key).type, JSON):
+                update_values[key] = cast(getattr(self.model, key), JSONB).concat(
+                    cast(value, JSONB)
+                )
+            else:
+                update_values[key] = value
 
-            query = update(self.model).where(and_(*filters)).values(**update_values)
-
-            result = await session.execute(query)
-            await session.commit()
-            return result.rowcount
+        query = update(self.model).where(and_(True, *filters)).values(**update_values)
+        result = await session.execute(query)
+        await session.commit()
+        return result.rowcount
 
     async def create_and_update(
         self,
         filter_options: FilterOptions,
         values: BaseModel,
     ) -> ModelType:
-        async with self.session as session:
-            filters = self._build_filters(filter_options.filters)
-            update_values = values.model_dump(exclude_unset=True)
+        session = self.session
+        filters = self._build_filters(filter_options.filters)
+        update_values = values.model_dump(exclude_unset=True)
 
-            for key, value in list(update_values.items()):
-                if isinstance(value, dict) and isinstance(getattr(self.model, key).type, JSON):
-                    update_values[key] = cast(getattr(self.model, key), JSON).concat(
-                        cast(value, JSON)
-                    )
+        for key, value in list(update_values.items()):
+            if isinstance(value, dict) and isinstance(getattr(self.model, key).type, JSON):
+                update_values[key] = cast(getattr(self.model, key), JSON).concat(cast(value, JSON))
 
-            query = select(self.model).where(and_(*filters))
-            existing_obj = await session.execute(query)
-            existing_obj = existing_obj.scalars().first()
+        query = select(self.model).where(and_(*filters))
+        existing_obj = await session.execute(query)
+        existing_obj = existing_obj.scalars().first()  # type:ignore
 
-            if existing_obj:
-                for key, value in update_values.items():
-                    setattr(existing_obj, key, value)
-                session.add(existing_obj)
-                await session.commit()
-                await session.refresh(existing_obj)
-                return existing_obj
-
-            new_obj = self.model(**update_values)
-            session.add(new_obj)
+        if existing_obj:
+            for key, value in update_values.items():
+                setattr(existing_obj, key, value)
+            session.add(existing_obj)
             await session.commit()
-            await session.refresh(new_obj)
-            return new_obj
+            await session.refresh(existing_obj)
+            return existing_obj  # type:ignore
+
+        new_obj = self.model(**update_values)
+        session.add(new_obj)
+        await session.commit()
+        await session.refresh(new_obj)
+        return new_obj
 
         # """Fetch object by ID and update with given fields."""
         # query = self._get_query(prefetch=prefetch)
@@ -359,11 +353,11 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
     #     return result.rowcount > 0
 
     async def delete(self, filter_options: FilterOptions) -> int:
-        async with self.session as session:
-            filters = self._build_filters(filter_options.filters)
+        session = self.session
+        filters = self._build_filters(filter_options.filters)
 
-            query = delete(self.model).where(and_(*filters))
-            result = await session.execute(query)
-            await session.commit()
+        query = delete(self.model).where(and_(*filters))
+        result = await session.execute(query)
+        await session.commit()
 
-            return result.rowcount  # Number of rows deleted
+        return result.rowcount  # Number of rows deleted

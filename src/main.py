@@ -25,8 +25,8 @@ class FastApiApp:
         self.register_exception_handlers()
         self.make_middleware()
 
-    def register_exception_handlers(self):
-        self.app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    def register_exception_handlers(self) -> None:
+        self.app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
 
     def make_middleware(self) -> None:
         self.app.add_middleware(

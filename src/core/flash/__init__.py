@@ -2,7 +2,10 @@ from starlette.requests import Request
 
 
 def flash_message(
-    request: Request, msg: str, errors: dict[str, str] | None = None, category: str = "default"
+    request: Request,
+    msg: str,
+    errors: dict[str, str] | str | None = None,
+    category: str = "default",
 ) -> None:
     if "_messages" not in request.session:
         request.session["_messages"] = []

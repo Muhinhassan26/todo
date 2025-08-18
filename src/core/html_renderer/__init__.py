@@ -9,7 +9,7 @@ from src.core.flash import get_flash_messages
 
 
 class HtmlRenderer:
-    def __init__(self):
+    def __init__(self) -> None:
         templates_directory = os.path.join(os.path.dirname(__file__), "../../templates")
         self.templates = Jinja2Templates(
             directory=templates_directory,
@@ -20,7 +20,7 @@ class HtmlRenderer:
         request: Request,
         template: str,
         data: Any | None = None,
-        messages: dict[str, Any] | None = None,
+        messages: list | None = None,
         status_code: int = 200,
     ) -> HTMLResponse:
         context: dict[str, Any] = {"request": request}

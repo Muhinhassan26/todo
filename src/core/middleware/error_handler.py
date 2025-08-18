@@ -15,7 +15,7 @@ class CustomErrorMiddleware(BaseHTTPMiddleware):
         try:
             return await call_next(request)
         except CustomException as exc:
-            msg = ERROR_MAPPER.get(getattr(exc, "error_code", None), exc.message)
+            msg = ERROR_MAPPER.get(getattr(exc, "error_code", ""), exc.message)
             flash_message(request=request, msg=msg, errors=exc.errors, category="error")
 
             if getattr(exc, "error_code", None) == INVALID_CRED:

@@ -39,23 +39,20 @@
         <!-- Search + Filter (centered, only on /todos/user/todos/) -->
         {% if request.url.path == "/todos/user/todos/" %}
         <form class="d-flex mx-auto align-items-center" method="get" action="/todos/user/todos/">
-          <!-- Search input -->
-          <input class="form-control me-2" type="search" name="search" placeholder="Search todos..." aria-label="Search"
-            value="{{ request.query_params.get('search', '') }}" />
+  <!-- Search input -->
+  <input class="form-control me-2" type="search" name="search" placeholder="Search todos..." aria-label="Search"
+    value="{{ request.query_params.get('search', '') }}" />
 
-          <!-- Search button -->
-          <button class="btn btn-outline-primary me-2" type="submit">Search</button>
+  <!-- Search button -->
+  <button class="btn btn-outline-primary me-2" type="submit">Search</button>
 
-          <!-- Filter dropdown -->
-          <select class="form-select" name="filter" onchange="this.form.submit()">
-            <option value="all" {% if request.query_params.get('filter', 'all' )=='all' %}selected{% endif %}>All
-            </option>
-            <option value="completed" {% if request.query_params.get('filter')=='completed' %}selected{% endif %}>
-              Completed</option>
-            <option value="not_completed" {% if request.query_params.get('filter')=='not_completed' %}selected{% endif
-              %}>Not Completed</option>
-          </select>
-        </form>
+  <!-- Filter dropdown -->
+  <select class="form-select" name="completed" onchange="this.form.submit()">
+    <option value="" {% if request.query_params.get('completed') == None %}selected{% endif %}>All</option>
+    <option value="True" {% if request.query_params.get('completed') == 'True' %}selected{% endif %}>Completed</option>
+    <option value="False" {% if request.query_params.get('completed') == 'False' %}selected{% endif %}>Not Completed</option>
+  </select>
+</form>
         {% endif %}
 
         <!-- Right-aligned links -->

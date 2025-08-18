@@ -1,6 +1,9 @@
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
+
+T = TypeVar("T")
 
 
 class QueryParams(BaseModel):
@@ -26,3 +29,18 @@ class FilterOptions(BaseModel):
     distinct_on: str | None = None
     # raw_query: str | None = None
     or_filters: set[str] | None = None
+
+
+class PaginationMeta(BaseModel):
+    total: int
+    current_page: int
+    next_page: int | None
+    prev_page: int | None
+    last_page: int
+    page_size: int
+    extra: Any | None = None
+
+
+class PaginatedResponse(BaseModel, Generic[T]):  # noqa
+    data: Sequence[T]
+    meta: PaginationMeta

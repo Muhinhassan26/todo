@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import status
 from src.core.error.codes import INVALID_CRED
 
@@ -6,9 +8,11 @@ class CustomException(Exception):
     code = status.HTTP_502_BAD_GATEWAY
     message = "Bad Gateway"
 
-    def __init__(self, message: str | None = None, errors: dict[str, str] | None = None) -> None:
+    def __init__(
+        self, message: str | None = None, errors: str | dict[str, Any] | None = None
+    ) -> None:
         self.message = message or self.message
-        self.errors = errors or {}
+        self.errors = errors or ""
 
     def __str__(self) -> str:
         return f"{self.message} -> {self.errors if self.errors else ''}"

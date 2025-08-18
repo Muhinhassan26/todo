@@ -4,17 +4,18 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from src.core.error.exceptions import NotFoundException
 from src.core.logger import logger
-from src.core.schemas.common import FilterOptions, QueryParams
+from src.core.schemas.common import FilterOptions, PaginatedResponse, QueryParams
+from src.core.service import BaseService
 from src.modules.todos.models import Todo
 from src.modules.todos.repository import TodoRepository
-from src.modules.todos.schemas import TodoCreate, TodoUpdate
+from src.modules.todos.schemas import TodoCreate, TodoResponse, TodoUpdate
 
 
-class TodoService:
+class TodoService(BaseService):
     def __init__(self, todo_repo: Annotated[TodoRepository, Depends(TodoRepository)]):
         self.todo_repo = todo_repo
 
-    async def get_user_todos(self, user_id: int) -> list[Todo]:
+    async def get_user_todos(self, user_id: int) -> Sequence[Todo]:
         return await self.todo_repo.filter(
             filter_options=FilterOptions(
                 filters={"user_id": user_id},
@@ -23,40 +24,33 @@ class TodoService:
         )
 
     async def get_user_todos_paginated(
-        self,
-        search_fields: list[str] | None,
-        user_id: int,
-        page: int = 1,
-        page_size: int = 10,
-        search: str | None = None,
-        filter_by: str = "all",
-    ) -> tuple[Sequence[Todo], int]:
+        self, user_id: int, query_params: QueryParams
+    ) -> PaginatedResponse[TodoResponse]:
         filters = {"user_id": user_id}
 
-        if filter_by == "completed":
-            filters["completed"] = True
-        elif filter_by == "not_completed":
-            filters["completed"] = False
-
-        pagination = QueryParams(
-            page=page,
-            page_size=page_size,
-            search=search,
-        )
+        if query_params.filter_params:
+            filters.update(query_params.filter_params)
 
         filter_options = FilterOptions(
             filters=filters,
-            pagination=pagination,
+            pagination=query_params,
             prefetch=("user",),
-            search_fields=search_fields,
+            search_fields=[],
         )
 
-        todos, total = await self.todo_repo.paginate_filters(filter_options=filter_options)
-        return todos, total
+        data, total = await self.todo_repo.paginate_filters(filter_options=filter_options)
+
+        return PaginatedResponse(
+            data=data,
+            meta=await self.setup_pagination_meta(
+                total=total,
+                page_size=query_params.page_size,
+                page=query_params.page,
+            ),
+        )
 
     async def get_todo(self, todo_id: int, user_id: int) -> Todo:
         todo = await self.todo_repo.get_by_filed(
-            obj_id=todo_id,
             filter_options=FilterOptions(
                 filters={"id": todo_id, "user_id": user_id}, prefetch=("user")
             ),
@@ -72,10 +66,11 @@ class TodoService:
         return todo
 
     async def update_todo(self, todo_id: int, user_id: int, data: TodoUpdate) -> None:
-        filters = FilterOptions(filters={"id": todo_id, "user_id": user_id})
+        filters = {"id": todo_id, "user_id": user_id}
 
-        update_data = TodoUpdate(**data.model_dump())
-        updated_count = await self.todo_repo.update(filter_options=filters, values=update_data)
+        updated_count = await self.todo_repo.update_obj(
+            where=filters, values=data.model_dump(exclude=None)
+        )
 
         if updated_count == 0:
             logger.warning(

@@ -5,7 +5,7 @@ from src.core.error.codes import EMAIL_ALREADY_EXISTS
 from src.core.error.exceptions import InvalidCredentialsException, ValidationException
 from src.core.error.format_error import ERROR_MAPPER
 from src.core.logger import logger
-from src.core.security import JWTHandler, password_handler
+from src.core.security import JWTHandler, PasswordHandler
 from src.modules.auth.schemas import (
     AccessTokenPayload,
     RefreshTokenPayload,
@@ -30,7 +30,7 @@ class UserAuthService:
             )
             raise ValidationException(errors=ERROR_MAPPER[EMAIL_ALREADY_EXISTS])
 
-        hashed_password = password_handler.hash(user_data.password)
+        hashed_password = PasswordHandler.hash(user_data.password)
 
         # Create a User SQLAlchemy instance
         user = User(
@@ -75,7 +75,7 @@ class UserAuthService:
             self.logger.warning(f"Login failed: Email not found - {login_data.email}")
             raise InvalidCredentialsException()
 
-        if not password_handler.verify_password(login_data.password, user.hashed_password):
+        if not PasswordHandler.verify_password(login_data.password, user.hashed_password):
             self.logger.warning(f"Login failed: Incorrect password for email - {login_data.email}")
             raise InvalidCredentialsException()
 

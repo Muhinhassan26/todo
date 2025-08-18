@@ -21,10 +21,18 @@ def get_current_user_id(request: Request) -> int | None:
 
 async def require_login(request: Request) -> int:
     try:
-        return get_current_user_id(request)
+        current_user = get_current_user_id(request)
+        if not current_user:
+            flash_message(request, msg="Unauthorized", category="danger")
+            raise HTTPException(
+                status_code=status.HTTP_303_SEE_OTHER,
+                headers={"Location": "/auth/user/login/"},
+            ) from None
+        return current_user
 
     except UnauthorizedException as e:
         flash_message(request, msg=getattr(e, "message", "Unauthorized"), category="danger")
         raise HTTPException(
-            status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/auth/user/login/"}
+            status_code=status.HTTP_303_SEE_OTHER,
+            headers={"Location": "/auth/user/login/"},
         ) from None
