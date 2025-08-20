@@ -63,6 +63,8 @@ class BaseRepository(Generic[ModelType]):  # noqa: UP046
                         value = True
                     elif value.lower() in ("0", "false", "f", "no", "False"):
                         value = False
+                    else:
+                        value = None
             result.append(operator(column, value))
         return result
 

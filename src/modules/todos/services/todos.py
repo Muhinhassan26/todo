@@ -35,7 +35,10 @@ class TodoService(BaseService):
             filters=filters,
             pagination=query_params,
             prefetch=("user",),
-            search_fields=[],
+            search_fields=[
+                "title",
+                "description",
+            ],
         )
 
         data, total = await self.todo_repo.paginate_filters(filter_options=filter_options)

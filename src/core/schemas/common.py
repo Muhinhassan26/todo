@@ -17,6 +17,9 @@ class QueryParams(BaseModel):
     def skip(self) -> int:
         return (self.page - 1) * self.page_size
 
+    class Config:
+        extra = "forbid"
+
 
 class FilterOptions(BaseModel):
     filters: dict[str, Any]

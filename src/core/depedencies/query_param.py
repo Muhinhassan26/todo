@@ -23,7 +23,6 @@ class CommonQueryParam:
             "search": search,
             "page": page,
             "page_size": page_size,
-            "filter_fields": self.filter_fields,
             "sorting": self.sorting,
         }
 
@@ -32,14 +31,11 @@ class CommonQueryParam:
         for key in entries_to_remove:
             query_clone.pop(key, None)
 
-        # query_clone = {
-        #     k: v for k, v in query_clone.items() if k in (self.filter_fields or [])
-        # }
-
-        filter_params = {}
+        filter_params: dict[str, Any] = {}
         for key, value in query_clone.items():
-            if value:
-                filter_params[key] = value
+            if self.filter_fields is None or key in self.filter_fields:  # noqa: SIM102
+                if value not in (None, ""):
+                    filter_params[key] = value
 
         if query_clone.get("order_by_fields"):  # {"order_by_fields": "date", "ordering: "desc"}
             data["sorting"] = {

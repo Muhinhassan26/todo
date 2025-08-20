@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from src.core.auth import get_current_user_id
+from src.core.depedencies import get_current_user_id
 from src.core.flash import get_flash_messages
 
 
