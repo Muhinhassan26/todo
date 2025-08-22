@@ -3,6 +3,8 @@ from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
+from src.core.error.exceptions import CustomException
+from src.core.middleware.custom_exceptions_handler import custom_exception_handler
 from src.core.middleware.validation import validation_exception_handler
 from src.routers import api_router as template_router
 
@@ -24,6 +26,7 @@ class FastApiApp:
 
     def register_exception_handlers(self) -> None:
         self.app.add_exception_handler(RequestValidationError, validation_exception_handler)
+        self.app.add_exception_handler(CustomException, custom_exception_handler)
 
     def make_middleware(self) -> None:
         self.app.add_middleware(
