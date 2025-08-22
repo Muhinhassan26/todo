@@ -1,11 +1,11 @@
 .venv
 .env
 __pycache__
-src/core/error
+
 src/core/flash
 src/core/html_renderer
 src/modules/pages
 src/static
 src/templates
-src/core/middleware
+
 

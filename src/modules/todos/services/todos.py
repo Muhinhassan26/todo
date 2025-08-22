@@ -1,68 +1,105 @@
+from collections.abc import Sequence
+from typing import Annotated
 
-from src.modules.todos.repository import TodoRepository
-from fastapi import Depends,HTTPException,status
-from typing import Annotated,List
-from src.modules.todos.models import Todo
+from fastapi import Depends
+from src.core.error.codes import NO_DATA
+from src.core.error.exceptions import (
+    InternalServerException,
+    NotFoundException,
+)
+from src.core.error.format_error import ERROR_MAPPER
 from src.core.logger import logger
-from src.modules.todos.schemas import TodoCreate,TodoUpdate
+from src.core.schemas.common import FilterOptions, PaginatedResponse, QueryParams
+from src.core.service import BaseService
+from src.modules.todos.models import Todo
+from src.modules.todos.repository import TodoRepository
+from src.modules.todos.schemas import TodoCreate, TodoResponse, TodoUpdate
 
 
+class TodoService(BaseService):
+    def __init__(self, todo_repo: Annotated[TodoRepository, Depends(TodoRepository)]):
+        self.todo_repo = todo_repo
 
-class TodoService:
-    def __init__(self,todo_repo:Annotated[TodoRepository,Depends(TodoRepository)]):
-        self.todo_repo=todo_repo
+    async def get_user_todos(self, user_id: int) -> Sequence[Todo]:
+        filter_options = FilterOptions(filters={"user_id": user_id})
+        todos = await self.todo_repo.filter(filter_options=filter_options)
+        if not todos:
+            logger.warning(f"No todos found for user_id={user_id}")
+            raise NotFoundException(message=ERROR_MAPPER.get(NO_DATA, "No todos found"))
+        return todos
 
-    
+    async def get_user_todos_paginated(
+        self,
+        user_id: int,
+        query_params: QueryParams,
+    ) -> PaginatedResponse[TodoResponse]:
+        filters = {"user_id": user_id}
+        if query_params.filter_params:
+            filters.update(query_params.filter_params)
 
-    async def get_user_todos(self, user_id: int) -> List[Todo]:
-        todos = await self.todo_repo.get_all_by_user(user_id=user_id)
-        return todos 
+        filter_options = FilterOptions(
+            filters=filters,
+            pagination=query_params,
+            prefetch=("user",),
+            search_fields=["title", "description"],
+        )
 
-    
-    async def get_user_todos_paginated(self,user_id:int,
-                                       skip: int , 
-                                       limit: int ,
-                                       search: str|None=None,
-                                       filter:str='all') -> List[Todo]:
-        todos= await self.todo_repo.get_all_by_user_paginated(user_id=user_id,
-                                                              skip=skip, 
-                                                              limit=limit+1,
-                                                              search=search,
-                                                              filter=filter)
-        has_next=len(todos) > limit
-        return todos[:limit],has_next
+        try:
+            data, total = await self.todo_repo.paginate_filters(filter_options=filter_options)
+        except Exception as e:
+            logger.error(f"Error during pagination for user_id={user_id} — {str(e)}")
+            raise InternalServerException(errors=str(e)) from e
 
-    async def count_user_todos(self, user_id: int,search: str|None=None,filter:str='all') -> int:
-        return await self.todo_repo.count_by_user(user_id,search=search,filter=filter)
+        if not data:
+            raise NotFoundException(message=ERROR_MAPPER.get(NO_DATA, "No todos found"))
 
+        return PaginatedResponse(
+            data=data,
+            meta=await self.setup_pagination_meta(
+                total=total,
+                page_size=query_params.page_size,
+                page=query_params.page,
+            ),
+        )
 
     async def get_todo(self, todo_id: int, user_id: int) -> Todo:
-        todo = await self.todo_repo.get_by_id(todo_id=todo_id, user_id=user_id)
+        todo = await self.todo_repo.get_by_filed(
+            filter_options=FilterOptions(
+                filters={"id": todo_id, "user_id": user_id}, prefetch=("user",)
+            )
+        )
         if not todo:
             logger.warning(f"Todo not found: todo_id={todo_id}, user_id={user_id}")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+            raise NotFoundException(message=ERROR_MAPPER.get(NO_DATA, "Todo not found"))
         return todo
 
-    
     async def create_todo(self, user_id: int, data: TodoCreate) -> Todo:
-        todo = await self.todo_repo.create(user_id=user_id, todo_data=data)
+        try:
+            todo = await self.todo_repo.create(obj=Todo(user_id=user_id, **data.model_dump()))
+        except Exception as e:
+            logger.error(f"Database error during todo creation for user_id={user_id} — {str(e)}")
+            raise InternalServerException(errors=str(e)) from e
         logger.info(f"Todo created: id={todo.id}, user_id={user_id}")
         return todo
-    
 
-    async def update_todo(self, todo_id: int, user_id: int, data: TodoUpdate) -> Todo:
-        todo = await self.todo_repo.update(todo_id=todo_id, user_id=user_id, update_data=data)
-        if not todo:
-            logger.warning(f"Update failed: todo_id={todo_id}, user_id={user_id}")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    async def update_todo(self, todo_id: int, user_id: int, data: TodoUpdate) -> None:
+        filters = {"id": todo_id, "user_id": user_id}
+        updated_count = await self.todo_repo.update_obj(
+            where=filters, values=data.model_dump(exclude_none=True)
+        )
+
+        if updated_count == 0:
+            logger.warning(f"Todo update failed: todo_id={todo_id}, user_id={user_id}")
+            raise NotFoundException(message=ERROR_MAPPER.get(NO_DATA, "Todo not found"))
+
         logger.info(f"Todo updated: id={todo_id}, user_id={user_id}")
-        return todo
 
-    
-    async def delete_todo(self, todo_id: int, user_id: int) -> None:
-        success = await self.todo_repo.delete(todo_id=todo_id, user_id=user_id)
-        if not success:
+    async def delete_todo(self, user_id: int, todo_id: int) -> None:
+        filters = FilterOptions(filters={"id": todo_id, "user_id": user_id})
+        deleted_count = await self.todo_repo.delete(filter_options=filters)
+
+        if deleted_count == 0:
             logger.warning(f"Delete failed: todo_id={todo_id}, user_id={user_id}")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+            raise NotFoundException(message=ERROR_MAPPER.get(NO_DATA, "Todo not found"))
+
         logger.info(f"Todo deleted: id={todo_id}, user_id={user_id}")
-        

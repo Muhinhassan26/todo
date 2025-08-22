@@ -1,6 +1,6 @@
-from pydantic import BaseModel,EmailStr,Field,model_validator
 from datetime import datetime
 
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserRegisterSchema(BaseModel):
@@ -8,21 +8,11 @@ class UserRegisterSchema(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6, max_length=128)
-    confirm_password:str=Field(..., min_length=6, max_length=128)
-
-    @model_validator(mode="before")
-    def passwords_match(cls, values):
-        pw = values.get("password")
-        confirm_pw = values.get("confirm_password")
-        if pw != confirm_pw:
-            raise ValueError("Passwords do not match")
-        return values
 
 
 class UserLoginSchema(BaseModel):
-    email:EmailStr
-    password:str=Field(..., min_length=6, max_length=128)
-
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=128)
 
 
 class TokenResponse(BaseModel):

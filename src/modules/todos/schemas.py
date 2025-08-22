@@ -1,28 +1,23 @@
-from pydantic import BaseModel, Field, conint
-from typing import Optional
-from datetime import datetime
+from pydantic import BaseModel, Field
 
 
-class TodoCreate(BaseModel):
+class TodoBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    priority: int = Field(ge=1, le=5) 
+    description: str | None = None
+    priority: int = Field(ge=1, le=5)
     completed: bool = False
 
 
-
-class TodoUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    priority: Optional[int]=Field(ge=1, le=5,default=None)  
-    completed: Optional[bool] = False
+class TodoCreate(TodoBase):
+    pass
 
 
-class TodoRead(BaseModel):
+class TodoUpdate(TodoBase):
+    pass
+
+
+class TodoResponse(TodoBase):
     id: int
-    title: str
-    description: Optional[str]
-    priority: int
-    completed: bool
-    created_at: datetime
-    updated_at: datetime
+
+    class Config:  # noqa: D106
+        orm_mode = True

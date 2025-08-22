@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
+
 import jwt
 from fastapi import HTTPException, status
 from src.core.config import settings
@@ -42,7 +43,7 @@ class JWTHandler:
             logger.error("JWT invalid %s", exception)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired access token. Please log in again."
+                detail="Invalid or expired access token. Please log in again.",
             ) from exception
 
     @staticmethod
@@ -57,6 +58,5 @@ class JWTHandler:
         except jwt.PyJWTError as exception:
             logger.error("JWT decoding failed (even without expiry check): %s", exception)
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token."
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token."
             ) from exception
